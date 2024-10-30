@@ -1,15 +1,20 @@
 package com.lczerniawski.bettercomments
 
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
+import com.intellij.openapi.editor.markup.MarkupModel
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
-import java.awt.Color
+import com.intellij.ui.JBColor
+import java.awt.Font
 
 object CommentsHighlighter {
+    private const val CUSTOM_HIGHLIGHTER_LAYER = HighlighterLayer.LAST + 1000
+
     fun applyCustomHighlighting(editor: Editor) {
         val project = editor.project ?: return
         val document = editor.document
@@ -24,19 +29,117 @@ object CommentsHighlighter {
         }
     }
 
-    private fun highlightComment(comment: PsiComment, markupModel: com.intellij.openapi.editor.markup.MarkupModel) {
-        val startOffset = comment.textRange.startOffset
-        val endOffset = comment.textRange.endOffset
+    private fun highlightComment(comment: PsiComment, markupModel: MarkupModel) {
+        if (comment.tokenType.toString().contains("BLOCK_COMMENT")){
+            val text = comment.text
+            val lines = text.split("\n")
 
-        val attributes = TextAttributes()
-        attributes.foregroundColor = Color.RED
+            for (line in lines) {
+                val lineTrimmed = parseBlockComment(line)
+                val startOffset = comment.textRange.startOffset + text.indexOf(line)
+                val endOffset = startOffset + line.length
 
-        markupModel.addRangeHighlighter(
-                startOffset,
-                endOffset,
-                HighlighterLayer.LAST,
-                attributes,
-                HighlighterTargetArea.EXACT_RANGE
-        )
+                applyCorrectHighlightStyle(lineTrimmed, startOffset, endOffset, markupModel)
+            }
+        } else {
+            val text = comment.text
+            val textTrimmed = parseSingleLineComment(text)
+            val startOffset = comment.textRange.startOffset
+            val endOffset = comment.textRange.endOffset
+
+            applyCorrectHighlightStyle(textTrimmed, startOffset, endOffset, markupModel)
+        }
+    }
+
+    private fun parseSingleLineComment(comment: String): String {
+        val trimmedSpacesText = comment.trimStart()
+        val trimmedNonSpecialComments = trimmedSpacesText.trimStart( '#', '-', '\'')
+        val trimmedSpecialComments =  trimmedNonSpecialComments.trimStartOnce("//", "*")
+        return trimmedSpecialComments.trimStart()
+    }
+
+    private fun parseBlockComment(comment: String): String {
+        val trimmedSpacesText = comment.trimStart()
+        val trimmedNonSpecialComments = trimmedSpacesText.trimStart( '#', '-', '\'')
+        val trimmedSpecialCommentsOnce = trimmedNonSpecialComments.trimStartOnce("/*", "*/", "/**", "**/")
+        val trimmedSpecialComments = trimmedSpecialCommentsOnce.trimStartOnceIfExistsMoreThanOnce("//", "*")
+        return trimmedSpecialComments.trimStart()
+    }
+
+    private fun applyCorrectHighlightStyle(comment: String, startOffset: Int, endOffset: Int, markupModel: MarkupModel) {
+        for (type in CommentType.values) {
+            if (comment.startsWith(type.type)){
+
+                val attributes = TextAttributes()
+                attributes.foregroundColor = JBColor.decode(type.color)
+
+                if (type.isBold) {
+                    attributes.fontType = attributes.fontType or Font.BOLD
+                }
+
+                if (type.isItalic) {
+                    attributes.fontType = attributes.fontType or Font.ITALIC
+                }
+
+                if (type.hasUnderline) {
+                    attributes.effectType = EffectType.LINE_UNDERSCORE
+                    attributes.effectColor = JBColor.decode(type.color)
+                }
+
+                if (type.hasStrikethrough) {
+                    attributes.effectType = EffectType.STRIKEOUT
+                    attributes.effectColor = JBColor.decode(type.color)
+                }
+
+                if (type.backgroundColor != null) {
+                    attributes.backgroundColor = JBColor.decode(type.backgroundColor)
+                }
+
+                markupModel.addRangeHighlighter(
+                    startOffset,
+                    endOffset,
+                    CUSTOM_HIGHLIGHTER_LAYER,
+                    attributes,
+                    HighlighterTargetArea.EXACT_RANGE
+                )
+            }
+        }
+    }
+
+    fun String.trimStartOnce(vararg strings: String): String {
+        if (this.isNotEmpty()) {
+            for (string in strings) {
+                if (this.startsWith(string)) {
+                    return this.substring(string.length)
+                }
+            }
+        }
+
+        return this
+    }
+
+    fun String.trimStartOnceIfExistsMoreThanOnce(vararg strings: String): String {
+        if (this.isNotEmpty()) {
+            for (string in strings) {
+                val patternCount = countPatternExistance(this, string)
+                if (patternCount > 1) {
+                    return this.substring(string.length)
+                }
+            }
+        }
+
+        return this
+    }
+
+    fun countPatternExistance(input: String, pattern: String): Int {
+        var count = 0
+
+        var index = input.indexOf(pattern)
+        while (index != -1) {
+            count++
+            index = input.indexOf(pattern, index + 2)
+        }
+
+        return count
     }
 }
