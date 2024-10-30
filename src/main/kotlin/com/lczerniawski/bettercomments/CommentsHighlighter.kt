@@ -68,7 +68,7 @@ object CommentsHighlighter {
 
     private fun applyCorrectHighlightStyle(comment: String, startOffset: Int, endOffset: Int, markupModel: MarkupModel) {
         for (type in CommentType.values) {
-            if (comment.startsWith(type.type)){
+            if (comment.startsWith(type.tag)){
 
                 val attributes = TextAttributes()
                 attributes.foregroundColor = JBColor.decode(type.color)

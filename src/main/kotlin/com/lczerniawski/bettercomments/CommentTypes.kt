@@ -1,6 +1,6 @@
 package com.lczerniawski.bettercomments
 
-class CommentType(val type: String, val color: String, val hasStrikethrough: Boolean, val hasUnderline: Boolean, val backgroundColor: String?, val isBold: Boolean, val isItalic: Boolean) {
+class CommentType(val tag: String, val color: String, val hasStrikethrough: Boolean, val hasUnderline: Boolean, val backgroundColor: String?, val isBold: Boolean, val isItalic: Boolean) {
     companion object {
         val Alert = CommentType("!", "#FF2D00", hasStrikethrough = false, hasUnderline = false, backgroundColor = null, isBold = false, isItalic = false)
         val Query = CommentType("?", "#3498DB", hasStrikethrough = false, hasUnderline = false, backgroundColor = null, isBold = false, isItalic = false)
