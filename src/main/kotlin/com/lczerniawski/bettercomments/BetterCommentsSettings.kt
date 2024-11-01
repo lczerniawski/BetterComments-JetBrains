@@ -23,6 +23,7 @@ class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.S
 
     override fun loadState(state: State) {
         tags = state.tags
+        isInitialized = state.isInitialized
     }
 
     fun save() {

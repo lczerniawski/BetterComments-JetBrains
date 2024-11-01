@@ -201,7 +201,7 @@ class BetterCommentsSettingsConfigurable : Configurable {
             row: Int,
             column: Int
         ): Component {
-            text = "Remove"
+            text = "Yes"
             return this
         }
     }
