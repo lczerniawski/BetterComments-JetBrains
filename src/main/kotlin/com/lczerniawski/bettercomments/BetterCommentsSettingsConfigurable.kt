@@ -46,6 +46,10 @@ class BetterCommentsSettingsConfigurable : Configurable {
         table.columnModel.getColumn(1).cellEditor = colorEditor
         table.columnModel.getColumn(2).cellEditor = colorEditor
 
+        val colorRenderer = ColorRenderer()
+        table.columnModel.getColumn(1).cellRenderer = colorRenderer
+        table.columnModel.getColumn(2).cellRenderer = colorRenderer
+
         table.columnModel.getColumn(7).cellRenderer = ButtonRenderer()
         table.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mouseClicked(e: java.awt.event.MouseEvent) {
@@ -198,6 +202,31 @@ class BetterCommentsSettingsConfigurable : Configurable {
             column: Int
         ): Component {
             text = "Remove"
+            return this
+        }
+    }
+
+    inner class ColorRenderer : JLabel(), TableCellRenderer {
+        init {
+            horizontalAlignment = CENTER
+            verticalAlignment = CENTER
+        }
+
+        override fun getTableCellRendererComponent(
+            table: JTable,
+            value: Any?,
+            isSelected: Boolean,
+            hasFocus: Boolean,
+            row: Int,
+            column: Int
+        ): Component {
+            val colorHex = value as? String ?: "#FFFFFF"
+            try {
+                background = Color.decode(colorHex)
+            } catch (e: Exception) {
+                background = JBColor.WHITE
+            }
+            text = colorHex
             return this
         }
     }
