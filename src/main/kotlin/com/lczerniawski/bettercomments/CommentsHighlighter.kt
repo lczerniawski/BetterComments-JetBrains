@@ -67,32 +67,32 @@ object CommentsHighlighter {
     }
 
     private fun applyCorrectHighlightStyle(comment: String, startOffset: Int, endOffset: Int, markupModel: MarkupModel) {
-        for (type in CommentType.values) {
-            if (comment.startsWith(type.tag)){
+        for (tag in DefaultTags.values) {
+            if (comment.startsWith(tag.type)) {
 
                 val attributes = TextAttributes()
-                attributes.foregroundColor = JBColor.decode(type.color)
+                attributes.foregroundColor = JBColor.decode(tag.color)
 
-                if (type.isBold) {
+                if (tag.isBold) {
                     attributes.fontType = attributes.fontType or Font.BOLD
                 }
 
-                if (type.isItalic) {
+                if (tag.isItalic) {
                     attributes.fontType = attributes.fontType or Font.ITALIC
                 }
 
-                if (type.hasUnderline) {
+                if (tag.hasUnderline) {
                     attributes.effectType = EffectType.LINE_UNDERSCORE
-                    attributes.effectColor = JBColor.decode(type.color)
+                    attributes.effectColor = JBColor.decode(tag.color)
                 }
 
-                if (type.hasStrikethrough) {
+                if (tag.hasStrikethrough) {
                     attributes.effectType = EffectType.STRIKEOUT
-                    attributes.effectColor = JBColor.decode(type.color)
+                    attributes.effectColor = JBColor.decode(tag.color)
                 }
 
-                if (type.backgroundColor != null) {
-                    attributes.backgroundColor = JBColor.decode(type.backgroundColor)
+                if (tag.backgroundColor != null) {
+                    attributes.backgroundColor = JBColor.decode(tag.backgroundColor)
                 }
 
                 markupModel.addRangeHighlighter(
@@ -106,7 +106,7 @@ object CommentsHighlighter {
         }
     }
 
-    fun String.trimStartOnce(vararg strings: String): String {
+    private fun String.trimStartOnce(vararg strings: String): String {
         if (this.isNotEmpty()) {
             for (string in strings) {
                 if (this.startsWith(string)) {
@@ -118,10 +118,10 @@ object CommentsHighlighter {
         return this
     }
 
-    fun String.trimStartOnceIfExistsMoreThanOnce(vararg strings: String): String {
+    private fun String.trimStartOnceIfExistsMoreThanOnce(vararg strings: String): String {
         if (this.isNotEmpty()) {
             for (string in strings) {
-                val patternCount = countPatternExistance(this, string)
+                val patternCount = countPatternExistence(this, string)
                 if (patternCount > 1) {
                     return this.substring(string.length)
                 }
@@ -131,7 +131,7 @@ object CommentsHighlighter {
         return this
     }
 
-    fun countPatternExistance(input: String, pattern: String): Int {
+    private fun countPatternExistence(input: String, pattern: String): Int {
         var count = 0
 
         var index = input.indexOf(pattern)

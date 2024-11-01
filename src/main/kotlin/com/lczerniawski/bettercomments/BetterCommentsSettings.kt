@@ -1,24 +1,34 @@
 package com.lczerniawski.bettercomments
 
 import com.intellij.openapi.components.*
+import com.intellij.util.xmlb.XmlSerializerUtil
 
 @State(name = "BetterCommentsSettings", storages = [Storage("BetterCommentsSettings.xml")])
 @Service
 class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.State> {
     var tags: MutableList<CustomTag> = mutableListOf()
+    var isInitialized: Boolean = false
 
     class State {
         var tags: MutableList<CustomTag> = mutableListOf()
+        var isInitialized: Boolean = false
     }
 
     override fun getState(): State {
         val state = State()
         state.tags = tags
+        state.isInitialized = isInitialized
         return state
     }
 
     override fun loadState(state: State) {
         tags = state.tags
+    }
+
+    fun save() {
+        // Force state to be saved
+        val state = getState()
+        XmlSerializerUtil.copyBean(state, this)
     }
 
     companion object {
