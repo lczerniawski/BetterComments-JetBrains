@@ -25,7 +25,10 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <projectConfigurable instance="com.lczerniawski.bettercomments.BetterCommentsSettingsConfigurable" displayName="Better Comments"/>
+        <applicationConfigurable
+                instance="com.lczerniawski.bettercomments.BetterCommentsSettingsConfigurable"
+                displayName="Better Comments"
+                groupId="editor" />
         <postStartupActivity implementation="com.lczerniawski.bettercomments.BetterCommentsInitializer"/>
     </extensions>
 

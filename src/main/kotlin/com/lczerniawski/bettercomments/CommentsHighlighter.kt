@@ -67,7 +67,7 @@ object CommentsHighlighter {
     }
 
     private fun applyCorrectHighlightStyle(comment: String, startOffset: Int, endOffset: Int, markupModel: MarkupModel) {
-        for (tag in DefaultTags.values) {
+        for (tag in BetterCommentsSettings.instance.tags) {
             if (comment.startsWith(tag.type)) {
 
                 val attributes = TextAttributes()

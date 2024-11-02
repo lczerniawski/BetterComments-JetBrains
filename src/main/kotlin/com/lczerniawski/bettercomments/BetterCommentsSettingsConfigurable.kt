@@ -1,25 +1,26 @@
 package com.lczerniawski.bettercomments
 
-import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
-import javax.swing.*
-import javax.swing.table.DefaultTableModel
-import javax.swing.table.TableCellRenderer
 import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
+import javax.swing.*
+import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableCellEditor
+import javax.swing.table.TableCellRenderer
 
-class BetterCommentsSettingsConfigurable : Configurable {
+class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     private var settingsPanel: JPanel? = null
     private lateinit var tableModel: DefaultTableModel
 
     override fun createComponent(): JComponent? {
         settingsPanel = JPanel(BorderLayout())
 
-        val columnNames = arrayOf("Type", "Color", "Background Color", "Strikethrough", "Underline", "Bold", "Italic", "Remove?")
+        val columnNames = arrayOf("Type", "Color", "Background Color", "Strikethrough", "Underline", "Bold", "Italic", "")
 
         tableModel = object : DefaultTableModel(columnNames, 0) {
             override fun getColumnClass(columnIndex: Int): Class<*> {
@@ -67,7 +68,7 @@ class BetterCommentsSettingsConfigurable : Configurable {
         val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT))
         val addButton = JButton("Add Tag")
         addButton.addActionListener {
-            tableModel.addRow(arrayOf("", "", "", false, false, false, false, JButton("Yes")))
+            tableModel.addRow(arrayOf("", "", "", false, false, false, false, JButton("Remove")))
         }
         buttonPanel.add(addButton)
         settingsPanel?.add(buttonPanel, BorderLayout.SOUTH)
@@ -87,7 +88,7 @@ class BetterCommentsSettingsConfigurable : Configurable {
                     tag.hasUnderline,
                     tag.isBold,
                     tag.isItalic,
-                    JButton("Yes")
+                    JButton("Remove")
                 )
             )
         }
@@ -139,6 +140,11 @@ class BetterCommentsSettingsConfigurable : Configurable {
             newTags.add(tag)
         }
         settings.tags = newTags
+
+        val editors = EditorFactory.getInstance().allEditors
+        for (editor in editors) {
+            CommentsHighlighter.applyCustomHighlighting(editor)
+        }
     }
 
     override fun reset() {
@@ -149,6 +155,8 @@ class BetterCommentsSettingsConfigurable : Configurable {
     override fun getDisplayName(): String {
         return "Better Comments"
     }
+
+    override fun getId(): String = "com.lczerniawski.bettercomments.settings"
 
     inner class ColorEditor : AbstractCellEditor(), TableCellEditor, ActionListener {
         private var currentColor: Color? = null
@@ -201,7 +209,7 @@ class BetterCommentsSettingsConfigurable : Configurable {
             row: Int,
             column: Int
         ): Component {
-            text = "Yes"
+            text = "Remove"
             return this
         }
     }
@@ -210,6 +218,7 @@ class BetterCommentsSettingsConfigurable : Configurable {
         init {
             horizontalAlignment = CENTER
             verticalAlignment = CENTER
+            isOpaque = true
         }
 
         override fun getTableCellRendererComponent(
