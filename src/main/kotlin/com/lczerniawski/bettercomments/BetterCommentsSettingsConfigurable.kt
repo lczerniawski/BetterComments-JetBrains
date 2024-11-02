@@ -2,16 +2,20 @@ package com.lczerniawski.bettercomments
 
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.options.SearchableConfigurable
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
-import java.awt.*
-import java.awt.event.ActionEvent
-import java.awt.event.ActionListener
-import javax.swing.*
+import com.lczerniawski.bettercomments.components.ColorPickerEditor
+import com.lczerniawski.bettercomments.components.ColorPickerRenderer
+import com.lczerniawski.bettercomments.components.RemoveButtonRenderer
+import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import javax.swing.JButton
+import javax.swing.JComponent
+import javax.swing.JPanel
 import javax.swing.table.DefaultTableModel
-import javax.swing.table.TableCellEditor
-import javax.swing.table.TableCellRenderer
 
 class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     private var settingsPanel: JPanel? = null
@@ -43,55 +47,15 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         table.preferredScrollableViewportSize = Dimension(600, 400)
         table.fillsViewportHeight = true
 
-        val colorEditor = ColorEditor()
-        table.columnModel.getColumn(1).cellEditor = colorEditor
-        table.columnModel.getColumn(2).cellEditor = colorEditor
-
-        val colorRenderer = ColorRenderer()
-        table.columnModel.getColumn(1).cellRenderer = colorRenderer
-        table.columnModel.getColumn(2).cellRenderer = colorRenderer
-
-        table.columnModel.getColumn(7).cellRenderer = ButtonRenderer()
-        table.addMouseListener(object : java.awt.event.MouseAdapter() {
-            override fun mouseClicked(e: java.awt.event.MouseEvent) {
-                val row = table.rowAtPoint(e.point)
-                val column = table.columnAtPoint(e.point)
-                if (column == 7) {
-                    tableModel.removeRow(row)
-                }
-            }
-        })
+        configureColorAndBackgroundColor(table)
+        configureRemoveButton(table)
 
         val scrollPane = JBScrollPane(table)
         settingsPanel?.add(scrollPane, BorderLayout.CENTER)
 
-        val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT))
-        val addButton = JButton("Add Tag")
-        addButton.addActionListener {
-            tableModel.addRow(arrayOf("", "", "", false, false, false, false, JButton("Remove")))
-        }
-        buttonPanel.add(addButton)
-        settingsPanel?.add(buttonPanel, BorderLayout.SOUTH)
+        configureAddTagButton()
 
         return settingsPanel
-    }
-
-    private fun loadSettings() {
-        val settings = BetterCommentsSettings.instance
-        settings.tags.forEach { tag ->
-            tableModel.addRow(
-                arrayOf(
-                    tag.type,
-                    tag.color,
-                    tag.backgroundColor ?: "",
-                    tag.hasStrikethrough,
-                    tag.hasUnderline,
-                    tag.isBold,
-                    tag.isItalic,
-                    JButton("Remove")
-                )
-            )
-        }
     }
 
     override fun isModified(): Boolean {
@@ -99,6 +63,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         if (tableModel.rowCount != settings.tags.size) {
             return true
         }
+
         for (i in 0 until tableModel.rowCount) {
             val tag = settings.tags[i]
             if (
@@ -141,10 +106,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         }
         settings.tags = newTags
 
-        val editors = EditorFactory.getInstance().allEditors
-        for (editor in editors) {
-            CommentsHighlighter.applyCustomHighlighting(editor)
-        }
+        refreshCommentsInEditor()
     }
 
     override fun reset() {
@@ -158,126 +120,62 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
 
     override fun getId(): String = "com.lczerniawski.bettercomments.settings"
 
-    inner class ColorEditor : AbstractCellEditor(), TableCellEditor, ActionListener {
-        private var currentColor: Color? = null
-        private val button = JButton()
-        private var hexColor: String = ""
-
-        init {
-            button.isBorderPainted = false
-            button.addActionListener(this)
+    private fun configureAddTagButton() {
+        val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT))
+        val addButton = JButton("Add Tag")
+        addButton.addActionListener {
+            tableModel.addRow(arrayOf("", "", "", false, false, false, false, JButton("Remove")))
         }
+        buttonPanel.add(addButton)
+        settingsPanel?.add(buttonPanel, BorderLayout.SOUTH)
+    }
 
-        override fun getTableCellEditorComponent(
-            table: JTable,
-            value: Any?,
-            isSelected: Boolean,
-            row: Int,
-            column: Int
-        ): Component {
-            hexColor = value as? String ?: ""
-            currentColor = if (hexColor.isNotBlank()) {
-                try {
-                    Color.decode(hexColor)
-                } catch (e: Exception) {
-                    JBColor.BLACK
+    private fun configureRemoveButton(table: JBTable) {
+        table.columnModel.getColumn(7).cellRenderer = RemoveButtonRenderer()
+        table.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                val row = table.rowAtPoint(e.point)
+                val column = table.columnAtPoint(e.point)
+                if (column == 7) {
+                    tableModel.removeRow(row)
                 }
-            } else {
-                null
             }
-            button.background = currentColor ?: table.background
-            return button
-        }
+        })
+    }
 
-        override fun getCellEditorValue(): Any {
-            return hexColor
-        }
+    private fun configureColorAndBackgroundColor(table: JBTable) {
+        val colorEditor = ColorPickerEditor()
+        table.columnModel.getColumn(1).cellEditor = colorEditor
+        table.columnModel.getColumn(2).cellEditor = colorEditor
 
-        override fun actionPerformed(e: ActionEvent?) {
-            val chooser = JColorChooser(currentColor ?: Color.WHITE)
-            val dialog = JDialog(
-                SwingUtilities.getWindowAncestor(button),
-                "Pick a Color",
-                Dialog.ModalityType.APPLICATION_MODAL
+        val colorRenderer = ColorPickerRenderer()
+        table.columnModel.getColumn(1).cellRenderer = colorRenderer
+        table.columnModel.getColumn(2).cellRenderer = colorRenderer
+    }
+
+    private fun loadSettings() {
+        val settings = BetterCommentsSettings.instance
+        settings.tags.forEach { tag ->
+            tableModel.addRow(
+                arrayOf(
+                    tag.type,
+                    tag.color,
+                    tag.backgroundColor ?: "",
+                    tag.hasStrikethrough,
+                    tag.hasUnderline,
+                    tag.isBold,
+                    tag.isItalic,
+                    JButton("Remove")
+                )
             )
-            dialog.layout = BorderLayout()
-            dialog.add(chooser, BorderLayout.CENTER)
-
-            val buttonPanel = JPanel()
-            val okButton = JButton("OK")
-            val cancelButton = JButton("Cancel")
-            val noColorButton = JButton("No Color")
-
-            okButton.addActionListener {
-                currentColor = chooser.color
-                hexColor = String.format("#%06X", currentColor?.rgb?.and(0xFFFFFF) ?: 0)
-                dialog.dispose()
-                fireEditingStopped()
-            }
-            cancelButton.addActionListener {
-                dialog.dispose()
-                fireEditingStopped()
-            }
-            noColorButton.addActionListener {
-                currentColor = null
-                hexColor = ""
-                dialog.dispose()
-                fireEditingStopped()
-            }
-
-            buttonPanel.add(okButton)
-            buttonPanel.add(cancelButton)
-            buttonPanel.add(noColorButton)
-            dialog.add(buttonPanel, BorderLayout.SOUTH)
-
-            dialog.pack()
-            dialog.setLocationRelativeTo(button)
-            dialog.isVisible = true
         }
     }
 
-    inner class ButtonRenderer : JButton(), TableCellRenderer {
-        override fun getTableCellRendererComponent(
-            table: JTable?,
-            value: Any?,
-            isSelected: Boolean,
-            hasFocus: Boolean,
-            row: Int,
-            column: Int
-        ): Component {
-            text = "Remove"
-            return this
+    private fun refreshCommentsInEditor() {
+        val editors = EditorFactory.getInstance().allEditors
+        for (editor in editors) {
+            CommentsHighlighter.applyCustomHighlighting(editor)
         }
     }
 
-    inner class ColorRenderer : JLabel(), TableCellRenderer {
-        init {
-            horizontalAlignment = CENTER
-            verticalAlignment = CENTER
-            isOpaque = true
-        }
-
-        override fun getTableCellRendererComponent(
-            table: JTable,
-            value: Any?,
-            isSelected: Boolean,
-            hasFocus: Boolean,
-            row: Int,
-            column: Int
-        ): Component {
-            val colorHex = value as? String ?: ""
-            if (colorHex.isBlank()) {
-                background = table.background
-                text = "No Color"
-            } else {
-                try {
-                    background = Color.decode(colorHex)
-                } catch (e: Exception) {
-                    background = JBColor.WHITE
-                }
-                text = colorHex
-            }
-            return this
-        }
-    }
 }

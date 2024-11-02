@@ -27,7 +27,6 @@ class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.S
     }
 
     fun save() {
-        // Force state to be saved
         val state = getState()
         XmlSerializerUtil.copyBean(state, this)
     }
