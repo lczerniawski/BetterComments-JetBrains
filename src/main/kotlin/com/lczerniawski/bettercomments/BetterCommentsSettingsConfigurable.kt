@@ -161,7 +161,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     inner class ColorEditor : AbstractCellEditor(), TableCellEditor, ActionListener {
         private var currentColor: Color? = null
         private val button = JButton()
-        private var hexColor: String = "#000000"
+        private var hexColor: String = ""
 
         init {
             button.isBorderPainted = false
@@ -175,13 +175,17 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
             row: Int,
             column: Int
         ): Component {
-            hexColor = value as? String ?: "#000000"
-            currentColor = try {
-                Color.decode(hexColor)
-            } catch (e: Exception) {
-                JBColor.BLACK
+            hexColor = value as? String ?: ""
+            currentColor = if (hexColor.isNotBlank()) {
+                try {
+                    Color.decode(hexColor)
+                } catch (e: Exception) {
+                    JBColor.BLACK
+                }
+            } else {
+                null
             }
-            button.background = currentColor
+            button.background = currentColor ?: table.background
             return button
         }
 
@@ -190,13 +194,45 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         }
 
         override fun actionPerformed(e: ActionEvent?) {
-            val chooser = JColorChooser(currentColor)
-            val dialog = JColorChooser.createDialog(button, "Pick a Color", true, chooser, {
+            val chooser = JColorChooser(currentColor ?: Color.WHITE)
+            val dialog = JDialog(
+                SwingUtilities.getWindowAncestor(button),
+                "Pick a Color",
+                Dialog.ModalityType.APPLICATION_MODAL
+            )
+            dialog.layout = BorderLayout()
+            dialog.add(chooser, BorderLayout.CENTER)
+
+            val buttonPanel = JPanel()
+            val okButton = JButton("OK")
+            val cancelButton = JButton("Cancel")
+            val noColorButton = JButton("No Color")
+
+            okButton.addActionListener {
                 currentColor = chooser.color
                 hexColor = String.format("#%06X", currentColor?.rgb?.and(0xFFFFFF) ?: 0)
-            }, null)
+                dialog.dispose()
+                fireEditingStopped()
+            }
+            cancelButton.addActionListener {
+                dialog.dispose()
+                fireEditingStopped()
+            }
+            noColorButton.addActionListener {
+                currentColor = null
+                hexColor = ""
+                dialog.dispose()
+                fireEditingStopped()
+            }
+
+            buttonPanel.add(okButton)
+            buttonPanel.add(cancelButton)
+            buttonPanel.add(noColorButton)
+            dialog.add(buttonPanel, BorderLayout.SOUTH)
+
+            dialog.pack()
+            dialog.setLocationRelativeTo(button)
             dialog.isVisible = true
-            fireEditingStopped()
         }
     }
 
@@ -229,13 +265,18 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
             row: Int,
             column: Int
         ): Component {
-            val colorHex = value as? String ?: "#FFFFFF"
-            try {
-                background = Color.decode(colorHex)
-            } catch (e: Exception) {
-                background = JBColor.WHITE
+            val colorHex = value as? String ?: ""
+            if (colorHex.isBlank()) {
+                background = table.background
+                text = "No Color"
+            } else {
+                try {
+                    background = Color.decode(colorHex)
+                } catch (e: Exception) {
+                    background = JBColor.WHITE
+                }
+                text = colorHex
             }
-            text = colorHex
             return this
         }
     }
