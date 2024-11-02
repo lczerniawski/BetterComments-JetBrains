@@ -1,9 +1,9 @@
-package com.lczerniawski.bettercomments.components;
+package com.lczerniawski.bettercomments.components
 
 import java.awt.Component
-import javax.swing.JButton;
+import javax.swing.JButton
 import javax.swing.JTable
-import javax.swing.table.*;
+import javax.swing.table.*
 
 class RemoveButtonRenderer : JButton(), TableCellRenderer {
     override fun getTableCellRendererComponent(
