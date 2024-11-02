@@ -69,7 +69,7 @@ object CommentsHighlighter {
     private fun applyCorrectHighlightStyle(comment: String, startOffset: Int, endOffset: Int, markupModel: MarkupModel) {
         val settings = BetterCommentsSettings.instance
         for (tag in settings.tags) {
-            if (comment.startsWith(tag.type)) {
+            if (comment.lowercase().startsWith(tag.type.lowercase())) {
 
                 val attributes = TextAttributes()
                 attributes.foregroundColor = JBColor.decode(tag.color)
