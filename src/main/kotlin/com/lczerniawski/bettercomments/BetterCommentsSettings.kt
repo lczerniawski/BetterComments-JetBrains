@@ -1,7 +1,6 @@
 package com.lczerniawski.bettercomments
 
 import com.intellij.openapi.components.*
-import com.intellij.util.xmlb.XmlSerializerUtil
 
 @State(name = "BetterCommentsSettings", storages = [Storage("BetterCommentsSettings.xml")])
 @Service
@@ -24,11 +23,6 @@ class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.S
     override fun loadState(state: State) {
         tags = state.tags
         isInitialized = state.isInitialized
-    }
-
-    fun save() {
-        val state = getState()
-        XmlSerializerUtil.copyBean(state, this)
     }
 
     companion object {

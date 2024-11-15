@@ -19,7 +19,6 @@ class BetterCommentsInitializer : ProjectActivity {
                 )
             })
             settings.isInitialized = true
-            settings.save()
         }
     }
 }
