@@ -42,7 +42,10 @@
   ]]></description>
 
     <change-notes><![CDATA[
-    <h3>[1.0.1] - 02.11.2024</h3>
+    <h3>[1.0.2] - 25.11.2024</h3>
+    Fix git difference viewer when using plugin.
+
+    <h3>[1.0.1] - 15.11.2024</h3>
     Fix exception being raised on startup when no custom tags are defined.
 
     <h3>[1.0.0] - 02.11.2024</h3>

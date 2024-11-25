@@ -21,7 +21,12 @@ object CommentsHighlighter {
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
 
         val markupModel = editor.markupModel
-        markupModel.removeAllHighlighters()
+        val highlighters = markupModel.allHighlighters
+        for (highlighter in highlighters) {
+            if (highlighter.layer == CUSTOM_HIGHLIGHTER_LAYER) {
+                markupModel.removeHighlighter(highlighter)
+            }
+        }
 
         val comments = PsiTreeUtil.collectElementsOfType(psiFile, PsiComment::class.java)
         for (comment in comments) {
