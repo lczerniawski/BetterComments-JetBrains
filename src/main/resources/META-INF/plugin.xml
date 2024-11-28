@@ -42,6 +42,9 @@
   ]]></description>
 
     <change-notes><![CDATA[
+    <h3>[1.0.4] - 28.11.2024</h3>
+    Try to fix "Must not modify PSI inside save listener" exception once again.
+
     <h3>[1.0.3] - 27.11.2024</h3>
     Fix "Must not modify PSI inside save listener" exception.
 
