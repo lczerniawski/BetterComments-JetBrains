@@ -21,8 +21,7 @@ object CommentsHighlighter {
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
 
         val markupModel = editor.markupModel
-        val highlighters = markupModel.allHighlighters
-        for (highlighter in highlighters) {
+        for (highlighter in markupModel.allHighlighters) {
             if (highlighter.layer == CUSTOM_HIGHLIGHTER_LAYER) {
                 markupModel.removeHighlighter(highlighter)
             }
