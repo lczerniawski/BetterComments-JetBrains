@@ -73,6 +73,13 @@
                 displayName="Better Comments"
                 groupId="editor"/>
         <postStartupActivity implementation="com.lczerniawski.bettercomments.BetterCommentsInitializer"/>
+
+        <toolWindow
+                id="Better Comments"
+                icon="/icons/toolbar_icon_13x13.svg"
+                anchor="right"
+                factoryClass="com.lczerniawski.bettercomments.BetterCommentsToolWindowFactory">
+        </toolWindow>
     </extensions>
 
     <applicationListeners>
