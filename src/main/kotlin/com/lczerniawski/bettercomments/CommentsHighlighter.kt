@@ -1,6 +1,5 @@
 package com.lczerniawski.bettercomments
 
-import CommentsParser
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.HighlighterLayer

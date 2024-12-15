@@ -1,5 +1,6 @@
+package com.lczerniawski.bettercomments
+
 import com.intellij.psi.PsiComment
-import com.lczerniawski.bettercomments.BetterCommentsSettings
 import com.lczerniawski.bettercomments.models.CommentData
 import com.lczerniawski.bettercomments.models.CustomTag
 
@@ -31,7 +32,7 @@ class CommentsParser {
             result.add(CommentData(textTrimmed, startOffset, endOffset, tag))
         }
 
-        return result;
+        return result
     }
 
     private fun findTag(comment: String): CustomTag? {
