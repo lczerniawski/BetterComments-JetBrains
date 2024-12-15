@@ -30,10 +30,15 @@ class ToolWindowTreeCellRenderer : DefaultTreeCellRenderer() {
             component.icon = fileIcon
             val itemsLabel = if (userObject.comments.size == 1) "item" else "items"
             component.text = "<html>${userObject.file.name} <span style='color:gray;'>${userObject.comments.size} $itemsLabel</span></html>"
-            component.toolTipText = "${userObject.file.name} ${userObject.comments.size} $itemsLabel"
         } else if (userObject is CommentNodeData) {
             component.icon = AllIcons.FileTypes.Text
-            component.text = "<html><span style='color:gray;'>${userObject.lineNumber}</span> ${userObject.text}</html>"
+            val style = StringBuilder("color:${userObject.tag.color};")
+            if (userObject.tag.isBold) style.append("font-weight:bold;")
+            if (userObject.tag.isItalic) style.append("font-weight:italic;")
+            if (userObject.tag.hasUnderline) style.append("text-decoration:underline;")
+            if (userObject.tag.hasStrikethrough) style.append("text-decoration:line-through;")
+            if (userObject.tag.backgroundColor != null) style.append("background-color:${userObject.tag.backgroundColor};")
+            component.text = "<html><span style='color:gray;'>${userObject.lineNumber}</span> <span style='$style'>${userObject.text}</span></html>"
         }
 
         return component

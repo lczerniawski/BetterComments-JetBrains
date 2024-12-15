@@ -133,7 +133,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                             foundBetterComments.forEach { betterComment ->
                                 val lineNumber = document.getLineNumber(betterComment.startOffset) + 1
                                 val cursorPosition = betterComment.startOffset - document.getLineStartOffset(lineNumber - 1)
-                                comments.add(CommentNodeData(comment.text, lineNumber, cursorPosition))
+                                comments.add(CommentNodeData(comment.text, lineNumber, cursorPosition, betterComment.tag))
                             }
                         }
 
