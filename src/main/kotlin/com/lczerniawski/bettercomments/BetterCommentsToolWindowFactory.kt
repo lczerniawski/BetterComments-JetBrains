@@ -1,6 +1,7 @@
 package com.lczerniawski.bettercomments
 
 import com.intellij.icons.AllIcons
+import com.intellij.ide.ui.UISettingsListener
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -32,7 +33,6 @@ import javax.swing.JPanel
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-// TODO FIX ICON ON LIGHT/DARK MODE
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val executor = Executors.newSingleThreadExecutor()
     private val panel = JPanel(CardLayout())
@@ -41,11 +41,13 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val commentTree = Tree(treeModel)
     private val progressLabel = JLabel("Search in progress...", JLabel.CENTER)
     private val startupLabel = JLabel("Click the refresh button to search for comments in your project.", JLabel.CENTER)
+
     private val commentsParser = CommentsParser()
+    private val iconProvider = BetterCommentsIconProvider()
 
     private lateinit var project: Project
 
-    init {
+    override fun init(toolWindow: ToolWindow) {
         val treePanel = JPanel(BorderLayout())
         treePanel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
         commentTree.cellRenderer = ToolWindowTreeCellRenderer()
@@ -62,6 +64,11 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         panel.add(startupLabel, "Startup")
         panel.add(treePanel, "Tree")
         panel.add(progressLabel, "Progress")
+
+        val icon = iconProvider.getIcon()
+        toolWindow.setIcon(icon)
+
+        ApplicationManager.getApplication().messageBus.connect().subscribe(UISettingsListener.TOPIC, ThemeChangeListener(toolWindow))
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
