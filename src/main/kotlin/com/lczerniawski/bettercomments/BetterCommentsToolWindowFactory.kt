@@ -10,6 +10,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.wm.ToolWindow
@@ -22,7 +23,6 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
 import java.awt.BorderLayout
 import java.awt.Component
-import java.awt.event.MouseEvent
 import java.util.concurrent.Executors
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -38,31 +38,10 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val treeModel = DefaultTreeModel(rootNode)
     private val commentTree = Tree(treeModel)
 
-    private lateinit var project: Project // TODO remove to not keep it here
-
     init {
         panel.layout = BorderLayout()
         panel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
         commentTree.cellRenderer = CommentTreeCellRenderer()
-        commentTree.addMouseListener(object: java.awt.event.MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent?) {
-                val tree = e?.source as JTree
-                val path = tree.getPathForLocation(e.x, e.y) ?: return
-                val node = path.lastPathComponent as DefaultMutableTreeNode
-                val userObject = node.userObject
-                if(userObject is CommentData) {
-                    val fileNode = node.parent as DefaultMutableTreeNode
-                    val fileData = fileNode.userObject as FileNodeData
-                    openFileInEditor(fileData.file, userObject.lineNumber, userObject.cursorPosition)
-                }
-            }
-        })
-    }
-
-    fun openFileInEditor(file: VirtualFile, lineNumber: Int, cursorPosition: Int) {
-        FileEditorManager.getInstance(project).openTextEditor(
-            OpenFileDescriptor(project, file, lineNumber - 1, cursorPosition), true
-        )
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
@@ -79,8 +58,23 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         toolWindow.setTitleActions(actionGroup.getChildren(null).toList())
         toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
 
+        commentTree.addTreeSelectionListener { event ->
+            val node = event.path.lastPathComponent as DefaultMutableTreeNode
+            val userObject = node.userObject
+            if(userObject is CommentData) {
+                val fileNode = node.parent as DefaultMutableTreeNode
+                val fileData = fileNode.userObject as FileNodeData
+                openFileInEditor(project, fileData.file, userObject.lineNumber, userObject.cursorPosition)
+            }
+        }
+
         scanForComments(project)
-        this.project = project
+    }
+
+    private fun openFileInEditor(project: Project, file: VirtualFile, lineNumber: Int, cursorPosition: Int) {
+        FileEditorManager.getInstance(project).openTextEditor(
+            OpenFileDescriptor(project, file, lineNumber - 1, cursorPosition, false), false
+        )
     }
 
     private fun scanForComments(project: Project) {
@@ -96,6 +90,12 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     }
 
     private fun scanForComments(project: Project, directory: VirtualFile, fileCommentsMap: MutableMap<VirtualFile, List<CommentData>>) {
+        val changeListManager = ChangeListManager.getInstance(project)
+
+        if (directory.name == ".git") {
+            return
+        }
+
         directory.children.forEach { child ->
             if (child.isDirectory) {
                 scanForComments(project, child, fileCommentsMap)
@@ -103,6 +103,12 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                 ApplicationManager.getApplication().runReadAction {
                     val document = FileDocumentManager.getInstance().getDocument(child)
                     document?.let {
+                        val virtualFile = FileDocumentManager.getInstance().getFile(document) ?: return@runReadAction
+
+                        if (changeListManager.isIgnoredFile(virtualFile)) {
+                            return@runReadAction
+                        }
+
                         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@runReadAction
                         val psiComments = PsiTreeUtil.collectElementsOfType(psiFile, PsiComment::class.java)
                         val comments = psiComments.map { comment ->

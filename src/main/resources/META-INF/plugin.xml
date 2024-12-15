@@ -77,7 +77,7 @@
         <toolWindow
                 id="Better Comments"
                 icon="/icons/toolbar_icon_13x13.svg"
-                anchor="right"
+                anchor="bottom"
                 factoryClass="com.lczerniawski.bettercomments.BetterCommentsToolWindowFactory">
         </toolWindow>
     </extensions>
