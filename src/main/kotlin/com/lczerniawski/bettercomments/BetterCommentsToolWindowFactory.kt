@@ -20,14 +20,13 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
+import com.lczerniawski.bettercomments.components.ToolWindowTreeCellRenderer
+import com.lczerniawski.bettercomments.models.CommentNodeData
+import com.lczerniawski.bettercomments.models.FileNodeData
 import java.awt.BorderLayout
-import java.awt.Component
 import java.util.concurrent.Executors
-import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.DefaultTreeCellRenderer
 import javax.swing.tree.DefaultTreeModel
 
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
@@ -40,7 +39,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     init {
         panel.layout = BorderLayout()
         panel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
-        commentTree.cellRenderer = CommentTreeCellRenderer()
+        commentTree.cellRenderer = ToolWindowTreeCellRenderer()
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
@@ -60,7 +59,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         commentTree.addTreeSelectionListener { event ->
             val node = event.path.lastPathComponent as DefaultMutableTreeNode
             val userObject = node.userObject
-            if(userObject is CommentData) {
+            if(userObject is CommentNodeData) {
                 val fileNode = node.parent as DefaultMutableTreeNode
                 val fileData = fileNode.userObject as FileNodeData
                 openFileInEditor(project, fileData.file, userObject.lineNumber, userObject.cursorPosition)
@@ -79,7 +78,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private fun scanForComments(project: Project) {
         executor.submit {
             val baseDir = VirtualFileManager.getInstance().findFileByUrl("file://${project.basePath}")
-            val fileCommentsMap = mutableMapOf<VirtualFile, List<CommentData>>()
+            val fileCommentsMap = mutableMapOf<VirtualFile, List<CommentNodeData>>()
             baseDir?.let { scanForComments(project, it, fileCommentsMap) }
             // TODO Do magic with comments, so extract correct ones and group them in files and move to them when clicked
             ApplicationManager.getApplication().invokeLater {
@@ -88,7 +87,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         }
     }
 
-    private fun scanForComments(project: Project, directory: VirtualFile, fileCommentsMap: MutableMap<VirtualFile, List<CommentData>>) {
+    private fun scanForComments(project: Project, directory: VirtualFile, fileCommentsMap: MutableMap<VirtualFile, List<CommentNodeData>>) {
         val changeListManager = ChangeListManager.getInstance(project)
 
         if (directory.name == ".git") {
@@ -113,7 +112,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                         val comments = psiComments.map { comment ->
                             val lineNumber = document.getLineNumber(comment.textOffset) + 1
                             val cursorPosition = comment.textOffset - document.getLineStartOffset(lineNumber - 1)
-                            CommentData(comment.text, lineNumber, cursorPosition)
+                            CommentNodeData(comment.text, lineNumber, cursorPosition)
                         }
                         if(comments.isNotEmpty()) {
                             fileCommentsMap[child] = comments
@@ -124,7 +123,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         }
     }
 
-    private fun updateTreeModel(fileCommentsMap: Map<VirtualFile, List<CommentData>>, project: Project) {
+    private fun updateTreeModel(fileCommentsMap: Map<VirtualFile, List<CommentNodeData>>, project: Project) {
         var commentsCounter = 0
         var filesCounter = 0
         val projectBasePath = project.basePath
@@ -167,38 +166,5 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         val filesLabel = if (filesCounter == 1) "file" else "files"
         rootNode.userObject = "Found $commentsCounter $commentsLabel in $filesCounter $filesLabel"
         treeModel.reload()
-    }
-
-    data class FileNodeData(val file: VirtualFile, val comments: List<CommentData>)
-    data class CommentData(val text: String, val lineNumber: Int, val cursorPosition: Int)
-    class CommentTreeCellRenderer : DefaultTreeCellRenderer() {
-        override fun getTreeCellRendererComponent(
-            tree: JTree,
-            value: Any,
-            selected: Boolean,
-            expanded: Boolean,
-            leaf: Boolean,
-            row: Int,
-            hasFocus: Boolean
-        ): Component {
-            val component = super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus) as JLabel
-            val node = value as DefaultMutableTreeNode
-            val userObject = node.userObject
-
-            if (node.isRoot) {
-                component.icon = null
-            } else if (userObject is FileNodeData) {
-                val fileIcon = userObject.file.fileType.icon
-                component.icon = fileIcon
-                val itemsLabel = if (userObject.comments.size == 1) "item" else "items"
-                component.text = "<html>${userObject.file.name} <span style='color:gray;'>${userObject.comments.size} $itemsLabel</span></html>"
-                component.toolTipText = "${userObject.file.name} ${userObject.comments.size} $itemsLabel"
-            } else if (userObject is CommentData) {
-                component.icon = AllIcons.FileTypes.Text
-                component.text = "<html><span style='color:gray;'>${userObject.lineNumber}</span> ${userObject.text}</html>"
-            }
-
-            return component
-        }
     }
 }
