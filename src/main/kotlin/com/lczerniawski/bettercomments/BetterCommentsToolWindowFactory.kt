@@ -41,10 +41,21 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val startupLabel = JLabel("Click the refresh button to search for comments in your project.", JLabel.CENTER)
     private val commentsParser = CommentsParser()
 
+    private lateinit var project: Project
+
     init {
         val treePanel = JPanel(BorderLayout())
         treePanel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
         commentTree.cellRenderer = ToolWindowTreeCellRenderer()
+        commentTree.addTreeSelectionListener { event ->
+            val node = event.path.lastPathComponent as DefaultMutableTreeNode
+            val userObject = node.userObject
+            if(userObject is CommentNodeData) {
+                val fileNode = node.parent as DefaultMutableTreeNode
+                val fileData = fileNode.userObject as FileNodeData
+                openFileInEditor(project, fileData.file, userObject.lineNumber, userObject.cursorPosition)
+            }
+        }
 
         panel.add(startupLabel, "Startup")
         panel.add(treePanel, "Tree")
@@ -54,7 +65,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val refreshAction = object : AnAction(AllIcons.Actions.Refresh) {
             override fun actionPerformed(e: AnActionEvent) {
-                scanForComments(project)
+                scanForComments()
             }
         }
 
@@ -65,15 +76,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         toolWindow.setTitleActions(actionGroup.getChildren(null).toList())
         toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
 
-        commentTree.addTreeSelectionListener { event ->
-            val node = event.path.lastPathComponent as DefaultMutableTreeNode
-            val userObject = node.userObject
-            if(userObject is CommentNodeData) {
-                val fileNode = node.parent as DefaultMutableTreeNode
-                val fileData = fileNode.userObject as FileNodeData
-                openFileInEditor(project, fileData.file, userObject.lineNumber, userObject.cursorPosition)
-            }
-        }
+        this.project = project
     }
 
     private fun openFileInEditor(project: Project, file: VirtualFile, lineNumber: Int, cursorPosition: Int) {
@@ -82,7 +85,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         )
     }
 
-    private fun scanForComments(project: Project) {
+    private fun scanForComments() {
         val cardLayout = panel.layout as CardLayout
         cardLayout.show(panel, "Progress")
 

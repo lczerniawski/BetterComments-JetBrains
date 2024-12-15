@@ -18,7 +18,7 @@ class CommentsParser {
                 val lineTrimmed = parseBlockComment(line)
                 val startOffset = comment.textRange.startOffset + text.indexOf(line)
                 val endOffset = startOffset + line.length
-                val tag = findTag(lineTrimmed) ?: return result
+                val tag = findTag(lineTrimmed) ?: continue
 
                 result.add(CommentData(lineTrimmed, startOffset, endOffset, tag))
             }
