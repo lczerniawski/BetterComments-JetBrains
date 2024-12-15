@@ -18,28 +18,41 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
 import com.lczerniawski.bettercomments.components.ToolWindowTreeCellRenderer
 import com.lczerniawski.bettercomments.models.CommentNodeData
 import com.lczerniawski.bettercomments.models.FileNodeData
 import java.awt.BorderLayout
+import java.awt.CardLayout
+import java.awt.Color
+import java.awt.Dimension
 import java.util.concurrent.Executors
+import javax.swing.BorderFactory
+import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JProgressBar
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val executor = Executors.newSingleThreadExecutor()
-    private val panel = JPanel()
+    private val panel = JPanel(CardLayout())
     private val rootNode = DefaultMutableTreeNode("Found 0 comments in 0 files")
     private val treeModel = DefaultTreeModel(rootNode)
     private val commentTree = Tree(treeModel)
+    private val progressLabel = JLabel("Search in progress...")
 
     init {
-        panel.layout = BorderLayout()
-        panel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
+        val treePanel = JPanel(BorderLayout())
+        treePanel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
         commentTree.cellRenderer = ToolWindowTreeCellRenderer()
+
+        progressLabel.horizontalAlignment = JLabel.CENTER
+
+        panel.add(treePanel, "Tree")
+        panel.add(progressLabel, "Progress")
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
@@ -76,6 +89,9 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     }
 
     private fun scanForComments(project: Project) {
+        val cardLayout = panel.layout as CardLayout
+        cardLayout.show(panel, "Progress")
+
         executor.submit {
             val baseDir = VirtualFileManager.getInstance().findFileByUrl("file://${project.basePath}")
             val fileCommentsMap = mutableMapOf<VirtualFile, List<CommentNodeData>>()
@@ -83,6 +99,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
             // TODO Do magic with comments, so extract correct ones and group them in files and move to them when clicked
             ApplicationManager.getApplication().invokeLater {
                 updateTreeModel(fileCommentsMap, project)
+                cardLayout.show(panel, "Tree")
             }
         }
     }
