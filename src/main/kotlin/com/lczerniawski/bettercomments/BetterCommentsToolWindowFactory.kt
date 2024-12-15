@@ -37,7 +37,8 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val rootNode = DefaultMutableTreeNode("Found 0 comments in 0 files")
     private val treeModel = DefaultTreeModel(rootNode)
     private val commentTree = Tree(treeModel)
-    private val progressLabel = JLabel("Search in progress...")
+    private val progressLabel = JLabel("Search in progress...", JLabel.CENTER)
+    private val startupLabel = JLabel("Click the refresh button to search for comments in your project.", JLabel.CENTER)
     private val commentsParser = CommentsParser()
 
     init {
@@ -45,8 +46,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         treePanel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
         commentTree.cellRenderer = ToolWindowTreeCellRenderer()
 
-        progressLabel.horizontalAlignment = JLabel.CENTER
-
+        panel.add(startupLabel, "Startup")
         panel.add(treePanel, "Tree")
         panel.add(progressLabel, "Progress")
     }
@@ -74,8 +74,6 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                 openFileInEditor(project, fileData.file, userObject.lineNumber, userObject.cursorPosition)
             }
         }
-
-        scanForComments(project)
     }
 
     private fun openFileInEditor(project: Project, file: VirtualFile, lineNumber: Int, cursorPosition: Int) {
@@ -92,7 +90,6 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
             val baseDir = VirtualFileManager.getInstance().findFileByUrl("file://${project.basePath}")
             val fileCommentsMap = mutableMapOf<VirtualFile, List<CommentNodeData>>()
             baseDir?.let { scanForComments(project, it, fileCommentsMap) }
-            // TODO Do magic with comments, so extract correct ones and group them in files and move to them when clicked
             ApplicationManager.getApplication().invokeLater {
                 updateTreeModel(fileCommentsMap, project)
                 cardLayout.show(panel, "Tree")
