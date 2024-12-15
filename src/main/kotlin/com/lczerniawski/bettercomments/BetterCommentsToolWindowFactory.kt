@@ -18,7 +18,6 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
 import java.awt.BorderLayout
@@ -34,7 +33,7 @@ import javax.swing.tree.DefaultTreeModel
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val executor = Executors.newSingleThreadExecutor()
     private val panel = JPanel()
-    private val rootNode = DefaultMutableTreeNode("Founded files with comments") // TODO Name it same as in TODO built in app
+    private val rootNode = DefaultMutableTreeNode("Found 0 comments in 0 files")
     private val treeModel = DefaultTreeModel(rootNode)
     private val commentTree = Tree(treeModel)
 
@@ -54,7 +53,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         val actionGroup = DefaultActionGroup()
         actionGroup.add(refreshAction)
         val actionToolbar = ActionManager.getInstance().createActionToolbar("Better Comments", actionGroup, true)
-        actionToolbar.targetComponent = toolWindow.component;
+        actionToolbar.targetComponent = toolWindow.component
         toolWindow.setTitleActions(actionGroup.getChildren(null).toList())
         toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
 
@@ -84,7 +83,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
             baseDir?.let { scanForComments(project, it, fileCommentsMap) }
             // TODO Do magic with comments, so extract correct ones and group them in files and move to them when clicked
             ApplicationManager.getApplication().invokeLater {
-                updateTreeModel(fileCommentsMap)
+                updateTreeModel(fileCommentsMap, project)
             }
         }
     }
@@ -125,16 +124,48 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         }
     }
 
-    private fun updateTreeModel(fileCommentsMap: Map<VirtualFile, List<CommentData>>) {
+    private fun updateTreeModel(fileCommentsMap: Map<VirtualFile, List<CommentData>>, project: Project) {
+        var commentsCounter = 0
+        var filesCounter = 0
+        val projectBasePath = project.basePath
+
         rootNode.removeAllChildren()
+        val folderNodes = mutableMapOf<String, DefaultMutableTreeNode>()
+        val folderFileCount = mutableMapOf<String, Int>()
+
         fileCommentsMap.forEach { (file, comments) ->
             val fileNode = DefaultMutableTreeNode(FileNodeData(file, comments))
+            filesCounter+= 1
+
             comments.forEach { comment ->
                 fileNode.add(DefaultMutableTreeNode(comment))
+                commentsCounter += 1
             }
 
-            rootNode.add(fileNode)
+            val folderName = file.parent.path.substringAfter(projectBasePath!!).trimStart('/')
+
+            if (folderName == "") {
+                rootNode.add(fileNode)
+            } else {
+                val folderNode = folderNodes.getOrPut(folderName) {
+                    val node = DefaultMutableTreeNode(folderName)
+                    rootNode.add(node)
+                    node
+                }
+                folderNode.add(fileNode)
+                folderFileCount[folderName] = folderFileCount.getOrDefault(folderName, 0) + 1
+            }
         }
+
+        folderNodes.forEach{ (folderName, folderNode) ->
+            val fileCount = folderFileCount[folderName] ?: 0
+            val fileLabel = if (fileCount == 1) "item" else "items"
+            folderNode.userObject = "<html>$folderName <span style='color:gray;'>$fileCount $fileLabel</span></html>"
+        }
+
+        val commentsLabel = if (commentsCounter == 1) "comment" else "comments"
+        val filesLabel = if (filesCounter == 1) "file" else "files"
+        rootNode.userObject = "Found $commentsCounter $commentsLabel in $filesCounter $filesLabel"
         treeModel.reload()
     }
 
@@ -159,12 +190,12 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
             } else if (userObject is FileNodeData) {
                 val fileIcon = userObject.file.fileType.icon
                 component.icon = fileIcon
-                component.text = userObject.file.name
-                component.toolTipText = "${userObject.file.name} (${userObject.comments.size})"
-                component.foreground = if (selected) foreground else JBColor.GRAY
+                val itemsLabel = if (userObject.comments.size == 1) "item" else "items"
+                component.text = "<html>${userObject.file.name} <span style='color:gray;'>${userObject.comments.size} $itemsLabel</span></html>"
+                component.toolTipText = "${userObject.file.name} ${userObject.comments.size} $itemsLabel"
             } else if (userObject is CommentData) {
                 component.icon = AllIcons.FileTypes.Text
-                component.text = "(${userObject.lineNumber},${userObject.cursorPosition}) ${userObject.text}"
+                component.text = "<html><span style='color:gray;'>${userObject.lineNumber}</span> ${userObject.text}</html>"
             }
 
             return component
