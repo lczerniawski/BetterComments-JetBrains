@@ -18,7 +18,6 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
 import com.lczerniawski.bettercomments.components.ToolWindowTreeCellRenderer
@@ -26,13 +25,9 @@ import com.lczerniawski.bettercomments.models.CommentNodeData
 import com.lczerniawski.bettercomments.models.FileNodeData
 import java.awt.BorderLayout
 import java.awt.CardLayout
-import java.awt.Color
-import java.awt.Dimension
 import java.util.concurrent.Executors
-import javax.swing.BorderFactory
 import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.JProgressBar
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
@@ -43,6 +38,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val treeModel = DefaultTreeModel(rootNode)
     private val commentTree = Tree(treeModel)
     private val progressLabel = JLabel("Search in progress...")
+    private val commentsParser = CommentsParser()
 
     init {
         val treePanel = JPanel(BorderLayout())
@@ -126,11 +122,21 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
 
                         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return@runReadAction
                         val psiComments = PsiTreeUtil.collectElementsOfType(psiFile, PsiComment::class.java)
-                        val comments = psiComments.map { comment ->
-                            val lineNumber = document.getLineNumber(comment.textOffset) + 1
-                            val cursorPosition = comment.textOffset - document.getLineStartOffset(lineNumber - 1)
-                            CommentNodeData(comment.text, lineNumber, cursorPosition)
+
+                        val comments = mutableListOf<CommentNodeData>()
+                        psiComments.forEach eachComment@ { comment ->
+                            val foundBetterComments = commentsParser.findBetterComments(comment)
+                            if(foundBetterComments.isEmpty()) {
+                                return@eachComment
+                            }
+
+                            foundBetterComments.forEach { betterComment ->
+                                val lineNumber = document.getLineNumber(betterComment.startOffset) + 1
+                                val cursorPosition = betterComment.startOffset - document.getLineStartOffset(lineNumber - 1)
+                                comments.add(CommentNodeData(comment.text, lineNumber, cursorPosition))
+                            }
                         }
+
                         if(comments.isNotEmpty()) {
                             fileCommentsMap[child] = comments
                         }
