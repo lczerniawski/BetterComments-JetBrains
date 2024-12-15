@@ -23,6 +23,7 @@ import com.intellij.ui.treeStructure.Tree
 import com.lczerniawski.bettercomments.components.ToolWindowTreeCellRenderer
 import com.lczerniawski.bettercomments.models.CommentNodeData
 import com.lczerniawski.bettercomments.models.FileNodeData
+import com.lczerniawski.bettercomments.models.FolderNodeData
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.util.concurrent.Executors
@@ -31,6 +32,7 @@ import javax.swing.JPanel
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
+// TODO FIX ICON ON LIGHT/DARK MODE
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val executor = Executors.newSingleThreadExecutor()
     private val panel = JPanel(CardLayout())
@@ -170,7 +172,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                 rootNode.add(fileNode)
             } else {
                 val folderNode = folderNodes.getOrPut(folderName) {
-                    val node = DefaultMutableTreeNode(folderName)
+                    val node = DefaultMutableTreeNode(FolderNodeData(folderName, 0))
                     rootNode.add(node)
                     node
                 }
@@ -181,8 +183,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
 
         folderNodes.forEach{ (folderName, folderNode) ->
             val fileCount = folderFileCount[folderName] ?: 0
-            val fileLabel = if (fileCount == 1) "item" else "items"
-            folderNode.userObject = "<html>$folderName <span style='color:gray;'>$fileCount $fileLabel</span></html>"
+            (folderNode.userObject as FolderNodeData).itemsCounter = fileCount
         }
 
         val commentsLabel = if (commentsCounter == 1) "comment" else "comments"

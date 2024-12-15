@@ -1,16 +1,17 @@
 package com.lczerniawski.bettercomments.components
 
 import com.intellij.icons.AllIcons
+import com.intellij.ui.ColoredTreeCellRenderer
+import com.intellij.ui.SimpleTextAttributes
 import com.lczerniawski.bettercomments.models.CommentNodeData
 import com.lczerniawski.bettercomments.models.FileNodeData
-import java.awt.Component
-import javax.swing.JLabel
+import com.lczerniawski.bettercomments.models.FolderNodeData
+import java.awt.Color
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.DefaultTreeCellRenderer
 
-class ToolWindowTreeCellRenderer : DefaultTreeCellRenderer() {
-    override fun getTreeCellRendererComponent(
+class ToolWindowTreeCellRenderer : ColoredTreeCellRenderer() {
+    override fun customizeCellRenderer(
         tree: JTree,
         value: Any,
         selected: Boolean,
@@ -18,29 +19,49 @@ class ToolWindowTreeCellRenderer : DefaultTreeCellRenderer() {
         leaf: Boolean,
         row: Int,
         hasFocus: Boolean
-    ): Component {
-        val component = super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus) as JLabel
+    ) {
         val node = value as DefaultMutableTreeNode
         val userObject = node.userObject
 
         if (node.isRoot) {
-            component.icon = null
+            icon = null
+            append(userObject.toString(), SimpleTextAttributes.REGULAR_ATTRIBUTES)
         } else if (userObject is FileNodeData) {
-            val fileIcon = userObject.file.fileType.icon
-            component.icon = fileIcon
+            icon = userObject.file.fileType.icon
             val itemsLabel = if (userObject.comments.size == 1) "item" else "items"
-            component.text = "<html>${userObject.file.name} <span style='color:gray;'>${userObject.comments.size} $itemsLabel</span></html>"
+            append(userObject.file.name, SimpleTextAttributes.REGULAR_ATTRIBUTES)
+            append(" ${userObject.comments.size} $itemsLabel", SimpleTextAttributes.GRAYED_ATTRIBUTES)
         } else if (userObject is CommentNodeData) {
-            component.icon = AllIcons.FileTypes.Text
-            val style = StringBuilder("color:${userObject.tag.color};")
-            if (userObject.tag.isBold) style.append("font-weight:bold;")
-            if (userObject.tag.isItalic) style.append("font-weight:italic;")
-            if (userObject.tag.hasUnderline) style.append("text-decoration:underline;")
-            if (userObject.tag.hasStrikethrough) style.append("text-decoration:line-through;")
-            if (userObject.tag.backgroundColor != null) style.append("background-color:${userObject.tag.backgroundColor};")
-            component.text = "<html><span style='color:gray;'>${userObject.lineNumber}</span> <span style='$style'>${userObject.text}</span></html>"
-        }
+            icon = AllIcons.FileTypes.Text
+            var style = SimpleTextAttributes.STYLE_PLAIN
+            if (userObject.tag.isBold) {
+                style = SimpleTextAttributes.STYLE_BOLD
+            }
 
-        return component
+            if (userObject.tag.isItalic) {
+                style = SimpleTextAttributes.STYLE_ITALIC
+            }
+
+            if (userObject.tag.hasUnderline) {
+                style = SimpleTextAttributes.STYLE_UNDERLINE
+            }
+
+            if (userObject.tag.hasStrikethrough) {
+                style = SimpleTextAttributes.STYLE_STRIKEOUT
+            }
+
+            var attributes = SimpleTextAttributes(style, Color.decode(userObject.tag.color))
+            if (userObject.tag.backgroundColor != null) {
+                attributes = SimpleTextAttributes(style, Color.decode(userObject.tag.backgroundColor), Color.decode(userObject.tag.color))
+            }
+
+            append("${userObject.lineNumber} ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+            append(userObject.text, attributes)
+        } else if(userObject is FolderNodeData) {
+            icon = AllIcons.Nodes.Folder
+            val itemsLabel = if (userObject.itemsCounter == 1) "item" else "items"
+            append(userObject.name, SimpleTextAttributes.REGULAR_ATTRIBUTES)
+            append(" ${userObject.itemsCounter} $itemsLabel", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+        }
     }
 }
