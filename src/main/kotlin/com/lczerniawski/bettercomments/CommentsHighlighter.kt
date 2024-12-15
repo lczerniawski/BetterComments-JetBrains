@@ -1,5 +1,6 @@
 package com.lczerniawski.bettercomments
 
+import CommentsParser
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -14,6 +15,7 @@ import java.awt.Font
 
 object CommentsHighlighter {
     private const val CUSTOM_HIGHLIGHTER_LAYER = HighlighterLayer.LAST + 1000
+    private val commentsParser = CommentsParser()
 
     fun applyCustomHighlighting(editor: Editor) {
         val project = editor.project ?: return
@@ -34,117 +36,40 @@ object CommentsHighlighter {
     }
 
     private fun highlightComment(comment: PsiComment, markupModel: MarkupModel) {
-        if (comment.tokenType.toString().contains("BLOCK_COMMENT")){
-            val text = comment.text
-            val lines = text.split("\n")
+        val comments = commentsParser.findBetterComments(comment)
+        comments.forEach { parsedComment ->
+            val attributes = TextAttributes()
+            attributes.foregroundColor = JBColor.decode(parsedComment.tag.color)
 
-            for (line in lines) {
-                val lineTrimmed = parseBlockComment(line)
-                val startOffset = comment.textRange.startOffset + text.indexOf(line)
-                val endOffset = startOffset + line.length
-
-                applyCorrectHighlightStyle(lineTrimmed, startOffset, endOffset, markupModel)
+            if (parsedComment.tag.isBold) {
+                attributes.fontType = attributes.fontType or Font.BOLD
             }
-        } else {
-            val text = comment.text
-            val textTrimmed = parseSingleLineComment(text)
-            val startOffset = comment.textRange.startOffset
-            val endOffset = comment.textRange.endOffset
 
-            applyCorrectHighlightStyle(textTrimmed, startOffset, endOffset, markupModel)
-        }
-    }
-
-    private fun parseSingleLineComment(comment: String): String {
-        val trimmedSpacesText = comment.trimStart()
-        val trimmedNonSpecialComments = trimmedSpacesText.trimStart( '#', '-', '\'')
-        val trimmedSpecialComments =  trimmedNonSpecialComments.trimStartOnce("//", "*")
-        return trimmedSpecialComments.trimStart()
-    }
-
-    private fun parseBlockComment(comment: String): String {
-        val trimmedSpacesText = comment.trimStart()
-        val trimmedNonSpecialComments = trimmedSpacesText.trimStart( '#', '-', '\'')
-        val trimmedSpecialCommentsOnce = trimmedNonSpecialComments.trimStartOnce("/*", "*/", "/**", "**/")
-        val trimmedSpecialComments = trimmedSpecialCommentsOnce.trimStartOnceIfExistsMoreThanOnce("//", "*")
-        return trimmedSpecialComments.trimStart()
-    }
-
-    private fun applyCorrectHighlightStyle(comment: String, startOffset: Int, endOffset: Int, markupModel: MarkupModel) {
-        val settings = BetterCommentsSettings.instance
-        for (tag in settings.tags) {
-            if (comment.lowercase().startsWith(tag.type.lowercase())) {
-
-                val attributes = TextAttributes()
-                attributes.foregroundColor = JBColor.decode(tag.color)
-
-                if (tag.isBold) {
-                    attributes.fontType = attributes.fontType or Font.BOLD
-                }
-
-                if (tag.isItalic) {
-                    attributes.fontType = attributes.fontType or Font.ITALIC
-                }
-
-                if (tag.hasUnderline) {
-                    attributes.effectType = EffectType.LINE_UNDERSCORE
-                    attributes.effectColor = JBColor.decode(tag.color)
-                }
-
-                if (tag.hasStrikethrough) {
-                    attributes.effectType = EffectType.STRIKEOUT
-                    attributes.effectColor = JBColor.decode(tag.color)
-                }
-
-                if (tag.backgroundColor != null) {
-                    attributes.backgroundColor = JBColor.decode(tag.backgroundColor)
-                }
-
-                markupModel.addRangeHighlighter(
-                    startOffset,
-                    endOffset,
-                    CUSTOM_HIGHLIGHTER_LAYER,
-                    attributes,
-                    HighlighterTargetArea.EXACT_RANGE
-                )
+            if (parsedComment.tag.isItalic) {
+                attributes.fontType = attributes.fontType or Font.ITALIC
             }
-        }
-    }
 
-    private fun String.trimStartOnce(vararg strings: String): String {
-        if (this.isNotEmpty()) {
-            for (string in strings) {
-                if (this.startsWith(string)) {
-                    return this.substring(string.length)
-                }
+            if (parsedComment.tag.hasUnderline) {
+                attributes.effectType = EffectType.LINE_UNDERSCORE
+                attributes.effectColor = JBColor.decode(parsedComment.tag.color)
             }
-        }
 
-        return this
-    }
-
-    private fun String.trimStartOnceIfExistsMoreThanOnce(vararg strings: String): String {
-        if (this.isNotEmpty()) {
-            for (string in strings) {
-                val patternCount = countPatternExistence(this, string)
-                if (patternCount > 1) {
-                    return this.substring(string.length)
-                }
+            if (parsedComment.tag.hasStrikethrough) {
+                attributes.effectType = EffectType.STRIKEOUT
+                attributes.effectColor = JBColor.decode(parsedComment.tag.color)
             }
+
+            if (parsedComment.tag.backgroundColor != null) {
+                attributes.backgroundColor = JBColor.decode(parsedComment.tag.backgroundColor)
+            }
+
+            markupModel.addRangeHighlighter(
+                parsedComment.startOffset,
+                parsedComment.endOffset,
+                CUSTOM_HIGHLIGHTER_LAYER,
+                attributes,
+                HighlighterTargetArea.EXACT_RANGE
+            )
         }
-
-        return this
-    }
-
-    private fun countPatternExistence(input: String, pattern: String): Int {
-        var count = 0
-
-        var index = input.indexOf(pattern)
-        while (index != -1) {
-            count++
-            index = input.indexOf(pattern, index + 2)
-        }
-
-        return count
     }
 }
