@@ -89,6 +89,8 @@
     <applicationListeners>
         <listener class="com.lczerniawski.bettercomments.codehiglighter.HighlightFileManagerListener"
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <listener class="com.lczerniawski.bettercomments.toolwindow.ThemeChangeListener"
+                  topic="com.intellij.ide.ui.UISettingsListener"/>
     </applicationListeners>
 
     <projectListeners>

@@ -1,7 +1,6 @@
 package com.lczerniawski.bettercomments.toolwindow
 
 import com.intellij.icons.AllIcons
-import com.intellij.ide.ui.UISettingsListener
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -70,7 +69,6 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
 
         val icon = iconProvider.getIcon()
         toolWindow.setIcon(icon)
-        ApplicationManager.getApplication().messageBus.connect().subscribe(UISettingsListener.TOPIC, ThemeChangeListener(toolWindow))
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
