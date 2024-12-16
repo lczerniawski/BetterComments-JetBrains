@@ -103,6 +103,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         val cardLayout = panel.layout as CardLayout
         cardLayout.show(panel, "Progress")
 
+        // * Temporary remove listeners to not by accident open old file
         val listeners = commentTree.treeSelectionListeners
         listeners.forEach { commentTree.removeTreeSelectionListener(it) }
 
@@ -114,6 +115,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                 updateTreeModel(fileCommentsMap, project)
                 cardLayout.show(panel, "Tree")
 
+                // * Restore listeners
                 listeners.forEach { commentTree.addTreeSelectionListener(it) }
             }
         }
