@@ -72,7 +72,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val refreshAction = object : AnAction(AllIcons.Actions.Refresh) {
+        val refreshAction = object : AnAction("Refresh", "Refresh the comments list", AllIcons.Actions.Refresh) {
             override fun actionPerformed(e: AnActionEvent) {
                 scanForComments()
             }
@@ -82,7 +82,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         actionGroup.add(refreshAction)
         val actionToolbar = ActionManager.getInstance().createActionToolbar("Better Comments", actionGroup, true)
         actionToolbar.targetComponent = toolWindow.component
-        toolWindow.setTitleActions(actionGroup.getChildren(null).toList())
+        toolWindow.setTitleActions(mutableListOf(refreshAction))
         toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
 
         val cardLayout = panel.layout as CardLayout
