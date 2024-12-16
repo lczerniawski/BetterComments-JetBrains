@@ -1,4 +1,4 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.toolwindow
 
 import com.intellij.openapi.util.IconLoader
 import com.intellij.util.ui.UIUtil

@@ -1,4 +1,4 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.toolwindow
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.ui.UISettingsListener
@@ -21,6 +21,7 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
+import com.lczerniawski.bettercomments.common.CommentsParser
 import com.lczerniawski.bettercomments.components.ToolWindowTreeCellRenderer
 import com.lczerniawski.bettercomments.models.CommentNodeData
 import com.lczerniawski.bettercomments.models.FileNodeData
@@ -45,6 +46,8 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val commentsParser = CommentsParser()
     private val iconProvider = BetterCommentsIconProvider()
 
+    private val foldersToExclude = arrayOf(".git")
+
     private lateinit var project: Project
 
     override fun init(toolWindow: ToolWindow) {
@@ -54,7 +57,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         commentTree.addTreeSelectionListener { event ->
             val node = event.path.lastPathComponent as DefaultMutableTreeNode
             val userObject = node.userObject
-            if(userObject is CommentNodeData) {
+            if (userObject is CommentNodeData) {
                 val fileNode = node.parent as DefaultMutableTreeNode
                 val fileData = fileNode.userObject as FileNodeData
                 openFileInEditor(project, fileData.file, userObject.lineNumber, userObject.cursorPosition)
@@ -67,7 +70,6 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
 
         val icon = iconProvider.getIcon()
         toolWindow.setIcon(icon)
-
         ApplicationManager.getApplication().messageBus.connect().subscribe(UISettingsListener.TOPIC, ThemeChangeListener(toolWindow))
     }
 
@@ -85,6 +87,9 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         toolWindow.setTitleActions(actionGroup.getChildren(null).toList())
         toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
 
+        val cardLayout = panel.layout as CardLayout
+        cardLayout.show(panel, "Startup")
+
         this.project = project
     }
 
@@ -97,7 +102,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private fun scanForComments() {
         val cardLayout = panel.layout as CardLayout
         cardLayout.show(panel, "Progress")
-
+        
         executor.submit {
             val baseDir = VirtualFileManager.getInstance().findFileByUrl("file://${project.basePath}")
             val fileCommentsMap = mutableMapOf<VirtualFile, List<CommentNodeData>>()
@@ -112,7 +117,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private fun scanForComments(project: Project, directory: VirtualFile, fileCommentsMap: MutableMap<VirtualFile, List<CommentNodeData>>) {
         val changeListManager = ChangeListManager.getInstance(project)
 
-        if (directory.name == ".git") {
+        if(foldersToExclude.contains(directory.name)) {
             return
         }
 
@@ -142,7 +147,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                             foundBetterComments.forEach { betterComment ->
                                 val lineNumber = document.getLineNumber(betterComment.startOffset) + 1
                                 val cursorPosition = betterComment.startOffset - document.getLineStartOffset(lineNumber - 1)
-                                comments.add(CommentNodeData(comment.text, lineNumber, cursorPosition, betterComment.tag))
+                                comments.add(CommentNodeData(betterComment.text, lineNumber, cursorPosition, betterComment.tag))
                             }
                         }
 

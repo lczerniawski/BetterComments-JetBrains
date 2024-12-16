@@ -1,4 +1,4 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.settings
 
 import com.intellij.openapi.components.*
 import com.lczerniawski.bettercomments.models.CustomTag

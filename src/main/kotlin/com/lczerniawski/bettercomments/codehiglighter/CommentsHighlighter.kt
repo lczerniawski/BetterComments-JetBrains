@@ -1,4 +1,4 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.codehiglighter
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.markup.EffectType
@@ -10,6 +10,7 @@ import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.ui.JBColor
+import com.lczerniawski.bettercomments.common.CommentsParser
 import java.awt.Font
 
 object CommentsHighlighter {

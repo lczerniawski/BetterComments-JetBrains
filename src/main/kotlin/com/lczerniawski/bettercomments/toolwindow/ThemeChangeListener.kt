@@ -1,4 +1,4 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.toolwindow
 
 import com.intellij.ide.ui.UISettings
 import com.intellij.ide.ui.UISettingsListener

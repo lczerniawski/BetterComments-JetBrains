@@ -1,9 +1,10 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.settings
 
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
+import com.lczerniawski.bettercomments.codehiglighter.CommentsHighlighter
 import com.lczerniawski.bettercomments.components.ColorPickerEditor
 import com.lczerniawski.bettercomments.components.ColorPickerRenderer
 import com.lczerniawski.bettercomments.components.RemoveButtonRenderer

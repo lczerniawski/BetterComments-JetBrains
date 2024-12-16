@@ -1,12 +1,13 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.common
 
 import com.intellij.psi.PsiComment
 import com.lczerniawski.bettercomments.models.CommentData
 import com.lczerniawski.bettercomments.models.CustomTag
+import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
 
 class CommentsParser {
     private val settings = BetterCommentsSettings.instance
-
+        
     fun findBetterComments(comment: PsiComment): List<CommentData> {
         val result = mutableListOf<CommentData>()
 
