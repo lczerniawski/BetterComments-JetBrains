@@ -102,7 +102,10 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private fun scanForComments() {
         val cardLayout = panel.layout as CardLayout
         cardLayout.show(panel, "Progress")
-        
+
+        val listeners = commentTree.treeSelectionListeners
+        listeners.forEach { commentTree.removeTreeSelectionListener(it) }
+
         executor.submit {
             val baseDir = VirtualFileManager.getInstance().findFileByUrl("file://${project.basePath}")
             val fileCommentsMap = mutableMapOf<VirtualFile, List<CommentNodeData>>()
@@ -110,6 +113,8 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
             ApplicationManager.getApplication().invokeLater {
                 updateTreeModel(fileCommentsMap, project)
                 cardLayout.show(panel, "Tree")
+
+                listeners.forEach { commentTree.addTreeSelectionListener(it) }
             }
         }
     }
