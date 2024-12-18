@@ -29,6 +29,7 @@ import com.lczerniawski.bettercomments.models.FolderNodeData
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.util.concurrent.Executors
+import javax.swing.BoxLayout
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.tree.DefaultMutableTreeNode
@@ -86,8 +87,14 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         val actionToolbar = ActionManager.getInstance().createActionToolbar("Better Comments", actionGroup, true)
         actionToolbar.targetComponent = toolWindow.component
 
+        val scopePanel = JPanel()
+        scopePanel.layout = BoxLayout(scopePanel, BoxLayout.X_AXIS)
+        val scopeLabel = JLabel("Scope: ")
+        scopePanel.add(scopeLabel)
+        scopePanel.add(searchTypeComboBox)
+
         val contentPanel = JPanel(BorderLayout())
-        contentPanel.add(searchTypeComboBox, BorderLayout.NORTH)
+        contentPanel.add(scopePanel, BorderLayout.NORTH)
         contentPanel.add(panel, BorderLayout.CENTER)
 
         toolWindow.setTitleActions(mutableListOf(refreshAction))
@@ -135,7 +142,20 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
             return
         }
 
-        directory.children.forEach { child ->
+        val filesToScan = when (searchType) {
+            SearchTypes.RecentlyChangedFiles -> {
+                changeListManager.allChanges.mapNotNull { it.virtualFile }
+            }
+            SearchTypes.OpenFiles -> {
+                FileEditorManager.getInstance(project).openFiles.toList()
+            }
+            SearchTypes.CurrentFile -> {
+                FileEditorManager.getInstance(project).selectedFiles.toList()
+            }
+            else -> directory.children.toList()
+        }
+
+        filesToScan.forEach { child ->
             if (child.isDirectory) {
                 scanForComments(project, child, fileCommentsMap)
             } else {

@@ -2,8 +2,7 @@ package com.lczerniawski.bettercomments.toolwindow
 
 enum class SearchTypes(val description: String) {
     ProjectFiles("Project Files Tracked by Git"),
-    RecentlyViewedFiles("Recently Viewed Files"),
-    RecentlyChangedFiles("Recently Changed Files"),
+    RecentlyChangedFiles("Changed Files"),
     OpenFiles("Open Files"),
     CurrentFile("Current File");
 
