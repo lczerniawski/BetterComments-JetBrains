@@ -10,6 +10,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
@@ -34,6 +35,9 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
+    private val foldersToExclude = arrayOf(".git")
+    private val searchTypes = SearchTypes.values()
+
     private val executor = Executors.newSingleThreadExecutor()
     private val panel = JPanel(CardLayout())
     private val rootNode = DefaultMutableTreeNode("Found 0 comments in 0 files")
@@ -41,11 +45,10 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val commentTree = Tree(treeModel)
     private val progressLabel = JLabel("Search in progress...", JLabel.CENTER)
     private val startupLabel = JLabel("Click the refresh button to search for comments in your project.", JLabel.CENTER)
+    private val searchTypeComboBox = ComboBox(searchTypes.map { it.description }.toTypedArray())
 
     private val commentsParser = CommentsParser()
     private val iconProvider = BetterCommentsIconProvider()
-
-    private val foldersToExclude = arrayOf(".git")
 
     private lateinit var project: Project
 
@@ -82,8 +85,13 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         actionGroup.add(refreshAction)
         val actionToolbar = ActionManager.getInstance().createActionToolbar("Better Comments", actionGroup, true)
         actionToolbar.targetComponent = toolWindow.component
+
+        val contentPanel = JPanel(BorderLayout())
+        contentPanel.add(searchTypeComboBox, BorderLayout.NORTH)
+        contentPanel.add(panel, BorderLayout.CENTER)
+
         toolWindow.setTitleActions(mutableListOf(refreshAction))
-        toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
+        toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(contentPanel, "", false))
 
         val cardLayout = panel.layout as CardLayout
         cardLayout.show(panel, "Startup")
@@ -121,6 +129,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
 
     private fun scanForComments(project: Project, directory: VirtualFile, fileCommentsMap: MutableMap<VirtualFile, List<CommentNodeData>>) {
         val changeListManager = ChangeListManager.getInstance(project)
+        val searchType = SearchTypes.fromString(searchTypeComboBox.selectedItem as String)
 
         if(foldersToExclude.contains(directory.name)) {
             return
