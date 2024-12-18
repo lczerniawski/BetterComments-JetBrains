@@ -1,6 +1,7 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.settings
 
 import com.intellij.openapi.components.*
+import com.lczerniawski.bettercomments.models.CustomTag
 
 @State(name = "BetterCommentsSettings", storages = [Storage("BetterCommentsSettings.xml")])
 @Service
@@ -30,13 +31,3 @@ class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.S
             get() = service()
     }
 }
-
-data class CustomTag(
-    var type: String = "",
-    var color: String = "",
-    var hasStrikethrough: Boolean = false,
-    var hasUnderline: Boolean = false,
-    var backgroundColor: String? = null,
-    var isBold: Boolean = false,
-    var isItalic: Boolean = false
-)

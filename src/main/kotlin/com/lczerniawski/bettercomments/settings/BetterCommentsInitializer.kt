@@ -1,7 +1,8 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.settings
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import com.lczerniawski.bettercomments.models.CustomTag
 
 class BetterCommentsInitializer : ProjectActivity {
     override suspend fun execute(project: Project) {

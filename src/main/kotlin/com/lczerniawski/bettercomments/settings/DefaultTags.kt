@@ -1,4 +1,4 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.settings
 
 class DefaultTags(val type: String, val color: String, val hasStrikethrough: Boolean, val hasUnderline: Boolean, val backgroundColor: String?, val isBold: Boolean, val isItalic: Boolean) {
     companion object {

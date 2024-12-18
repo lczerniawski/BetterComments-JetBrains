@@ -33,6 +33,7 @@
             <li><strong>Custom Tag Addition:</strong> Users can add their own tags, allowing for personalized comment styles tailored to specific project needs.</li>
             <li><strong>Improved Readability:</strong> Distinct comment styles contribute to clearer code comprehension, making it easier for teams to collaborate.</li>
             <li><strong>Wide Compatibility:</strong> Compatible with all JetBrains IDEs, including IntelliJ IDEA, PyCharm, and WebStorm.</li>
+            <li><strong>Tool Window:</strong> A tool window that displays all Better Comments from the entire project in one place, making it easy to navigate and manage comments.</li>
         </ul>
 
         <p>
@@ -42,6 +43,9 @@
   ]]></description>
 
     <change-notes><![CDATA[
+    <h3>[2.0.0] - 16.12.2024</h3>
+    Add a tool window that displays all Better Comments from the entire project.
+
     <h3>[1.1.0] - 11.12.2024</h3>
     Improve performance by offloading the colorizing process to a background thread.
 
@@ -69,14 +73,29 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <applicationConfigurable
-                instance="com.lczerniawski.bettercomments.BetterCommentsSettingsConfigurable"
+                instance="com.lczerniawski.bettercomments.settings.BetterCommentsSettingsConfigurable"
                 displayName="Better Comments"
                 groupId="editor"/>
-        <postStartupActivity implementation="com.lczerniawski.bettercomments.BetterCommentsInitializer"/>
+        <postStartupActivity implementation="com.lczerniawski.bettercomments.settings.BetterCommentsInitializer"/>
+
+        <toolWindow
+                id="Better Comments"
+                icon="/icons/toolbar_icon_light_13x13.svg"
+                anchor="bottom"
+                factoryClass="com.lczerniawski.bettercomments.toolwindow.BetterCommentsToolWindowFactory">
+        </toolWindow>
     </extensions>
 
     <applicationListeners>
-        <listener class="com.lczerniawski.bettercomments.HighlightFileEditorManagerListener"
+        <listener class="com.lczerniawski.bettercomments.codehiglighter.HighlightFileManagerListener"
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <listener class="com.lczerniawski.bettercomments.toolwindow.ThemeChangeListener"
+                  topic="com.intellij.ide.ui.UISettingsListener"/>
     </applicationListeners>
+
+    <projectListeners>
+        <listener class="com.lczerniawski.bettercomments.codehiglighter.HighlightFileManagerListener"
+                  topic="com.intellij.openapi.project.ProjectManagerListener">
+        </listener>
+    </projectListeners>
 </idea-plugin>

@@ -1,4 +1,4 @@
-package com.lczerniawski.bettercomments
+package com.lczerniawski.bettercomments.codehiglighter
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
@@ -13,6 +13,10 @@ class HighlightDocumentListener(private val editor: Editor) : DocumentListener {
 
     override fun documentChanged(event: DocumentEvent) {
         val project = editor.project ?: return
+
+        if (project.isDisposed) {
+            return
+        }
 
         executor.submit {
             ApplicationManager.getApplication().invokeLater {
