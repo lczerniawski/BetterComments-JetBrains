@@ -146,7 +146,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
             SearchTypes.RecentlyChangedFiles -> {
                 changeListManager.allChanges.mapNotNull { it.virtualFile }
             }
-            SearchTypes.OpenFiles -> {
+            SearchTypes.OpenedFiles -> {
                 FileEditorManager.getInstance(project).openFiles.toList()
             }
             SearchTypes.CurrentFile -> {
