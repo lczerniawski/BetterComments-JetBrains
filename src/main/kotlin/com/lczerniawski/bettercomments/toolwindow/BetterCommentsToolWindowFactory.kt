@@ -26,6 +26,7 @@ import com.lczerniawski.bettercomments.components.ToolWindowTreeCellRenderer
 import com.lczerniawski.bettercomments.models.CommentNodeData
 import com.lczerniawski.bettercomments.models.FileNodeData
 import com.lczerniawski.bettercomments.models.FolderNodeData
+import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.util.concurrent.Executors
@@ -38,6 +39,7 @@ import javax.swing.tree.DefaultTreeModel
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val foldersToExclude = arrayOf(".git")
     private val searchTypes = SearchTypes.values()
+    private val allCommentsType = "All"
 
     private val executor = Executors.newSingleThreadExecutor()
     private val panel = JPanel(CardLayout())
@@ -46,7 +48,8 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val commentTree = Tree(treeModel)
     private val progressLabel = JLabel("Search in progress...", JLabel.CENTER)
     private val startupLabel = JLabel("Click the refresh button to search for comments in your project.", JLabel.CENTER)
-    private val searchTypeComboBox = ComboBox(searchTypes.map { it.description }.toTypedArray())
+    private val scopeTypeComboBox = ComboBox(searchTypes.map { it.description }.toTypedArray())
+    private val commentTypeComboBox = getComboBoxForCommentsType()
 
     private val commentsParser = CommentsParser()
     private val iconProvider = BetterCommentsIconProvider()
@@ -87,14 +90,25 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         val actionToolbar = ActionManager.getInstance().createActionToolbar("Better Comments", actionGroup, true)
         actionToolbar.targetComponent = toolWindow.component
 
+
         val scopePanel = JPanel()
         scopePanel.layout = BoxLayout(scopePanel, BoxLayout.X_AXIS)
         val scopeLabel = JLabel("Scope: ")
         scopePanel.add(scopeLabel)
-        scopePanel.add(searchTypeComboBox)
+        scopePanel.add(scopeTypeComboBox)
+
+        val commentTypePanel = JPanel()
+        commentTypePanel.layout = BoxLayout(commentTypePanel, BoxLayout.X_AXIS)
+        val commentTypeLabel = JLabel("Comment Type: ")
+        scopePanel.add(commentTypeLabel)
+        scopePanel.add(commentTypeComboBox)
+
+        val filtersPanel = JPanel()
+        filtersPanel.layout = BoxLayout(filtersPanel, BoxLayout.X_AXIS)
+        filtersPanel.add(scopePanel)
 
         val contentPanel = JPanel(BorderLayout())
-        contentPanel.add(scopePanel, BorderLayout.NORTH)
+        contentPanel.add(filtersPanel, BorderLayout.NORTH)
         contentPanel.add(panel, BorderLayout.CENTER)
 
         toolWindow.setTitleActions(mutableListOf(refreshAction))
@@ -136,13 +150,14 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
 
     private fun scanForComments(project: Project, directory: VirtualFile, fileCommentsMap: MutableMap<VirtualFile, List<CommentNodeData>>) {
         val changeListManager = ChangeListManager.getInstance(project)
-        val searchType = SearchTypes.fromString(searchTypeComboBox.selectedItem as String)
+        val scopeType = SearchTypes.fromString(scopeTypeComboBox.selectedItem as String)
+        val commentType = commentTypeComboBox.selectedItem as String
 
         if(foldersToExclude.contains(directory.name)) {
             return
         }
 
-        val filesToScan = when (searchType) {
+        val filesToScan = when (scopeType) {
             SearchTypes.RecentlyChangedFiles -> {
                 changeListManager.allChanges.mapNotNull { it.virtualFile }
             }
@@ -179,9 +194,12 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
                             }
 
                             foundBetterComments.forEach { betterComment ->
-                                val lineNumber = document.getLineNumber(betterComment.startOffset) + 1
-                                val cursorPosition = betterComment.startOffset - document.getLineStartOffset(lineNumber - 1)
-                                comments.add(CommentNodeData(betterComment.text, lineNumber, cursorPosition, betterComment.tag))
+                                if (commentType == allCommentsType || commentType == betterComment.tag.type) {
+                                    val lineNumber = document.getLineNumber(betterComment.startOffset) + 1
+                                    val cursorPosition = betterComment.startOffset - document.getLineStartOffset(lineNumber - 1)
+                                    comments.add(CommentNodeData(betterComment.text, lineNumber, cursorPosition, betterComment.tag))
+                                }
+
                             }
                         }
 
@@ -236,5 +254,17 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         val filesLabel = if (filesCounter == 1) "file" else "files"
         rootNode.userObject = "Found $commentsCounter $commentsLabel in $filesCounter $filesLabel"
         treeModel.reload()
+    }
+
+    private fun getComboBoxForCommentsType(): ComboBox<String> {
+        val comboBox = ComboBox<String>()
+        comboBox.addItem(allCommentsType)
+
+        val betterCommentSettings = BetterCommentsSettings.instance.state
+        for (type in betterCommentSettings.tags) {
+            comboBox.addItem(type.type)
+        }
+
+        return comboBox
     }
 }

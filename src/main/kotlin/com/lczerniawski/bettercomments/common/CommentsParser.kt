@@ -6,10 +6,15 @@ import com.lczerniawski.bettercomments.models.CustomTag
 import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
 
 class CommentsParser {
+    private val hashBangComment = "#!/bin"
     private val settings = BetterCommentsSettings.instance
         
     fun findBetterComments(comment: PsiComment): List<CommentData> {
         val result = mutableListOf<CommentData>()
+
+        if(comment.text.startsWith(hashBangComment)) {
+            return result
+        }
 
         if (comment.tokenType.toString().contains("BLOCK_COMMENT")){
             val text = comment.text
