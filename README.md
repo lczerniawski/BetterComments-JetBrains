@@ -1,6 +1,7 @@
 # Better Comments Plugin for JetBrains IDE
 
-![main window](https://github.com/user-attachments/assets/9b0f9b93-16f6-404f-8525-d044782dd638)
+![main window](https://github.com/user-attachments/assets/10e0fe96-661a-4f9a-bd92-4b305cf3bdff)
+![comment type filter](https://github.com/user-attachments/assets/a3470570-7ae2-46db-bf82-49049d070891)
 ![settings](https://github.com/user-attachments/assets/745942d2-70a1-46af-98ae-b57a2c93efc8)
 
 The **Better Comments** plugin enhances commenting capabilities within JetBrains IDEs, allowing developers to create organized and visually distinct comments. This improvement in clarity and readability aids in understanding and maintaining code.
