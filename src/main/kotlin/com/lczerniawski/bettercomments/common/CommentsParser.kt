@@ -6,7 +6,7 @@ import com.lczerniawski.bettercomments.models.CustomTag
 import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
 
 class CommentsParser {
-    private val hashBangComment = "#!/bin"
+    private val hashBangComment = "#!/"
     private val settings = BetterCommentsSettings.instance
         
     fun findBetterComments(comment: PsiComment): List<CommentData> {

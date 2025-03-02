@@ -44,6 +44,9 @@
   ]]></description>
 
     <change-notes><![CDATA[
+    <h3>[2.2.1] - 02.03.2025</h3>
+    [Fix] Improve hashbang filtering
+
     <h3>[2.2.0] - 02.03.2025</h3>
     [Fix] issue with hashbang being detected as better comment
     [New feature] Add support for search by comment type in better comment tool window
