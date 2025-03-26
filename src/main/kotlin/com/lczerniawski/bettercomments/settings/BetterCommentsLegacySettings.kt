@@ -1,37 +1,35 @@
 package com.lczerniawski.bettercomments.settings
 
 import com.intellij.openapi.components.*
-import com.intellij.openapi.project.Project
 import com.lczerniawski.bettercomments.models.CustomTag
 
 @State(
     name = "BetterCommentsSettings",
-    storages = [
-        Storage("betterCommentsSettings.xml")
-    ])
-@Service(Service.Level.PROJECT)
-class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.State> {
+    storages = [Storage("BetterCommentsSettings.xml", roamingType = RoamingType.DISABLED)]
+)
+@Service(Service.Level.APP)
+class BetterCommentsLegacySettings : PersistentStateComponent<BetterCommentsLegacySettings.State> {
     var tags: MutableList<CustomTag> = mutableListOf()
-    var isInitialized: Boolean = false
+    var migrated: Boolean = false
 
     class State {
         var tags: MutableList<CustomTag> = mutableListOf()
-        var isInitialized: Boolean = false
+        var migrated: Boolean = false
     }
 
     override fun getState(): State {
         val state = State()
         state.tags = tags
-        state.isInitialized = isInitialized
+        state.migrated = migrated
         return state
     }
 
     override fun loadState(state: State) {
         tags = state.tags
-        isInitialized = state.isInitialized
+        migrated = state.migrated
     }
 
     companion object {
-        fun getInstance(project: Project): BetterCommentsSettings = project.service<BetterCommentsSettings>()
+        fun getInstance(): BetterCommentsLegacySettings = service()
     }
 }

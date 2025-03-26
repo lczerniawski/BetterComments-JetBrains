@@ -15,12 +15,12 @@ import java.awt.Font
 
 object CommentsHighlighter {
     private const val CUSTOM_HIGHLIGHTER_LAYER = HighlighterLayer.LAST + 1000
-    private val commentsParser = CommentsParser()
 
     fun applyCustomHighlighting(editor: Editor) {
         val project = editor.project ?: return
         val document = editor.document
         val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
+        val commentsParser = CommentsParser(project)
 
         val markupModel = editor.markupModel
         for (highlighter in markupModel.allHighlighters) {
@@ -31,11 +31,11 @@ object CommentsHighlighter {
 
         val comments = PsiTreeUtil.collectElementsOfType(psiFile, PsiComment::class.java)
         for (comment in comments) {
-            highlightComment(comment, markupModel)
+            highlightComment(comment, markupModel, commentsParser)
         }
     }
 
-    private fun highlightComment(comment: PsiComment, markupModel: MarkupModel) {
+    private fun highlightComment(comment: PsiComment, markupModel: MarkupModel, commentsParser: CommentsParser) {
         val comments = commentsParser.findBetterComments(comment)
         comments.forEach { parsedComment ->
             val attributes = TextAttributes()

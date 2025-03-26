@@ -6,8 +6,17 @@ import com.lczerniawski.bettercomments.models.CustomTag
 
 class BetterCommentsInitializer : ProjectActivity {
     override suspend fun execute(project: Project) {
-        val settings = BetterCommentsSettings.instance
+        val settings = BetterCommentsSettings.getInstance(project)
+        val legacySettings = BetterCommentsLegacySettings.getInstance()
+
         if (!settings.isInitialized) {
+            if (legacySettings.tags.isNotEmpty() && !legacySettings.migrated) {
+                settings.tags.addAll(legacySettings.tags)
+                settings.isInitialized = true
+                legacySettings.migrated = true
+                return
+            }
+
             settings.tags.addAll(DefaultTags.values.map {
                 CustomTag(
                     type = it.type,

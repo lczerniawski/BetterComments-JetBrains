@@ -44,6 +44,10 @@
   ]]></description>
 
     <change-notes><![CDATA[
+    <h3>[3.0.0] - 26.03.2025</h3>
+    From now on settings for BetterComments are stored on project level (.idea folder), so they can be easily shared between all of your co-workers in single project!
+    If you had your own BetterComments defined previously, they will be migrated on the project startup to the .idea folder.
+
     <h3>[2.2.1] - 02.03.2025</h3>
     [Fix] Improve hashbang filtering
 
@@ -91,10 +95,11 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <applicationConfigurable
+        <projectConfigurable
                 instance="com.lczerniawski.bettercomments.settings.BetterCommentsSettingsConfigurable"
                 displayName="Better Comments"
                 groupId="editor"/>
+        <applicationService serviceImplementation="com.lczerniawski.bettercomments.settings.BetterCommentsLegacySettings"/>
         <postStartupActivity implementation="com.lczerniawski.bettercomments.settings.BetterCommentsInitializer"/>
 
         <toolWindow

@@ -2,6 +2,8 @@ package com.lczerniawski.bettercomments.settings
 
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.options.SearchableConfigurable
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.lczerniawski.bettercomments.codehiglighter.CommentsHighlighter
@@ -22,6 +24,8 @@ import javax.swing.table.DefaultTableModel
 class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     private var settingsPanel: JPanel? = null
     private lateinit var tableModel: DefaultTableModel
+    private val project: Project
+        get() = ProjectManager.getInstance().openProjects.firstOrNull() ?: throw IllegalStateException("No open projects")
 
     override fun createComponent(): JComponent? {
         settingsPanel = JPanel(BorderLayout())
@@ -61,7 +65,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     }
 
     override fun isModified(): Boolean {
-        val settings = BetterCommentsSettings.instance
+        val settings = BetterCommentsSettings.getInstance(project)
         if (tableModel.rowCount != settings.tags.size) {
             return true
         }
@@ -84,7 +88,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     }
 
     override fun apply() {
-        val settings = BetterCommentsSettings.instance
+        val settings = BetterCommentsSettings.getInstance(project)
         val newTags = mutableListOf<CustomTag>()
         for (i in 0 until tableModel.rowCount) {
             val type = tableModel.getValueAt(i, 0) as String
@@ -156,7 +160,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     }
 
     private fun loadSettings() {
-        val settings = BetterCommentsSettings.instance
+        val settings = BetterCommentsSettings.getInstance(project)
         settings.tags.forEach { tag ->
             tableModel.addRow(
                 arrayOf(

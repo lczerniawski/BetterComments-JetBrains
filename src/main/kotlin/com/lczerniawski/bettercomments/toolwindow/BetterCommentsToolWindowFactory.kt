@@ -49,11 +49,11 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val progressLabel = JLabel("Search in progress...", JLabel.CENTER)
     private val startupLabel = JLabel("Click the refresh button to search for comments in your project.", JLabel.CENTER)
     private val scopeTypeComboBox = ComboBox(searchTypes.map { it.description }.toTypedArray())
-    private val commentTypeComboBox = getComboBoxForCommentsType()
 
-    private val commentsParser = CommentsParser()
     private val iconProvider = BetterCommentsIconProvider()
 
+    private lateinit var commentsParser: CommentsParser
+    private lateinit var commentTypeComboBox: ComboBox<String>
     private lateinit var project: Project
 
     override fun init(toolWindow: ToolWindow) {
@@ -79,6 +79,10 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     }
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        this.project = project
+        this.commentsParser = CommentsParser(project)
+        this.commentTypeComboBox = getComboBoxForCommentsType(project)
+
         val refreshAction = object : AnAction("Refresh", "Refresh the comments list", AllIcons.Actions.Refresh) {
             override fun actionPerformed(e: AnActionEvent) {
                 scanForComments()
@@ -116,8 +120,6 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
 
         val cardLayout = panel.layout as CardLayout
         cardLayout.show(panel, "Startup")
-
-        this.project = project
     }
 
     private fun openFileInEditor(project: Project, file: VirtualFile, lineNumber: Int, cursorPosition: Int) {
@@ -256,11 +258,11 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         treeModel.reload()
     }
 
-    private fun getComboBoxForCommentsType(): ComboBox<String> {
+    private fun getComboBoxForCommentsType(project: Project): ComboBox<String> {
         val comboBox = ComboBox<String>()
         comboBox.addItem(allCommentsType)
 
-        val betterCommentSettings = BetterCommentsSettings.instance.state
+        val betterCommentSettings = BetterCommentsSettings.getInstance(project).state
         for (type in betterCommentSettings.tags) {
             comboBox.addItem(type.type)
         }
