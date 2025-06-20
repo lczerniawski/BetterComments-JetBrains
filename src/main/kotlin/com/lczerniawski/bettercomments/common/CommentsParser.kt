@@ -9,37 +9,60 @@ import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
 class CommentsParser(project: Project) {
     private val hashBangComment = "#!/"
     private val settings = BetterCommentsSettings.getInstance(project)
-        
-    fun findBetterComments(comment: PsiComment): List<CommentData> {
-        val result = mutableListOf<CommentData>()
 
-        if(comment.text.startsWith(hashBangComment)) {
-            return result
+    fun findBetterComments(comment: PsiComment): List<CommentData> {
+        if (comment.text.startsWith(hashBangComment)) {
+            return emptyList()
         }
 
-        if (comment.tokenType.toString().contains("BLOCK_COMMENT")){
-            val text = comment.text
-            val lines = text.split("\n")
+        return if (comment.tokenType.toString().contains("BLOCK_COMMENT")) {
+            processBlockComment(comment)
+        } else {
+            processLineComment(comment)
+        }
+    }
 
-            for (line in lines) {
-                val lineTrimmed = parseBlockComment(line)
+    private fun processLineComment(comment: PsiComment): List<CommentData> {
+        val text = comment.text
+        val textTrimmed = parseSingleLineComment(text)
+        val tag = findTag(textTrimmed) ?: return emptyList()
+
+        return listOf(CommentData(textTrimmed, comment.textRange.startOffset, comment.textRange.endOffset, tag))
+    }
+
+    private fun processBlockComment(
+        comment: PsiComment
+    ): List<CommentData> {
+        val text = comment.text
+        val lines = text.split("\n")
+
+        val lineComments = lines.mapNotNull { line ->
+            val lineTrimmed = parseBlockComment(line)
+            findTag(lineTrimmed)?.let { tag ->
                 val startOffset = comment.textRange.startOffset + text.indexOf(line)
                 val endOffset = startOffset + line.length
-                val tag = findTag(lineTrimmed) ?: continue
 
-                result.add(CommentData(lineTrimmed, startOffset, endOffset, tag))
+                CommentData(lineTrimmed, startOffset, endOffset, tag)
             }
-        } else {
-            val text = comment.text
-            val textTrimmed = parseSingleLineComment(text)
-            val startOffset = comment.textRange.startOffset
-            val endOffset = comment.textRange.endOffset
-            val tag = findTag(textTrimmed) ?: return result
-
-            result.add(CommentData(textTrimmed, startOffset, endOffset, tag))
         }
 
-        return result
+        if (lines.isEmpty()) {
+            return emptyList()
+        }
+
+        val uniqueTags = lineComments.distinctBy { it.tag.type }
+        return if (uniqueTags.size == 1) {
+            listOf(
+                CommentData(
+                    text,
+                    comment.textRange.startOffset,
+                    comment.textRange.endOffset,
+                    uniqueTags.first().tag
+                )
+            )
+        } else {
+            lineComments
+        }
     }
 
     private fun findTag(comment: String): CustomTag? {
@@ -54,14 +77,14 @@ class CommentsParser(project: Project) {
 
     private fun parseSingleLineComment(comment: String): String {
         val trimmedSpacesText = comment.trimStart()
-        val trimmedNonSpecialComments = trimmedSpacesText.trimStart( '#', '-', '\'')
-        val trimmedSpecialComments =  trimmedNonSpecialComments.trimStartOnce("//", "*")
+        val trimmedNonSpecialComments = trimmedSpacesText.trimStart('#', '-', '\'')
+        val trimmedSpecialComments = trimmedNonSpecialComments.trimStartOnce("//", "*")
         return trimmedSpecialComments.trimStart()
     }
 
     private fun parseBlockComment(comment: String): String {
         val trimmedSpacesText = comment.trimStart()
-        val trimmedNonSpecialComments = trimmedSpacesText.trimStart( '#', '-', '\'')
+        val trimmedNonSpecialComments = trimmedSpacesText.trimStart('#', '-', '\'')
         val trimmedSpecialCommentsOnce = trimmedNonSpecialComments.trimStartOnce("/*", "*/", "/**", "**/")
         val trimmedSpecialComments = trimmedSpecialCommentsOnce.trimStartOnceIfExistsMoreThanOnce("//", "*")
         return trimmedSpecialComments.trimStart()
