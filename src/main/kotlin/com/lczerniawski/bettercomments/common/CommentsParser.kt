@@ -78,14 +78,14 @@ class CommentsParser(project: Project) {
     private fun parseSingleLineComment(comment: String): String {
         val trimmedSpacesText = comment.trimStart()
         val trimmedNonSpecialComments = trimmedSpacesText.trimStart('#', '-', '\'')
-        val trimmedSpecialComments = trimmedNonSpecialComments.trimStartOnce("//", "*")
+        val trimmedSpecialComments = trimmedNonSpecialComments.trimStartOnce("//", "*", "<!--")
         return trimmedSpecialComments.trimStart()
     }
 
     private fun parseBlockComment(comment: String): String {
         val trimmedSpacesText = comment.trimStart()
         val trimmedNonSpecialComments = trimmedSpacesText.trimStart('#', '-', '\'')
-        val trimmedSpecialCommentsOnce = trimmedNonSpecialComments.trimStartOnce("/*", "*/", "/**", "**/")
+        val trimmedSpecialCommentsOnce = trimmedNonSpecialComments.trimStartOnce("/*", "*/", "/**", "**/", "<!--")
         val trimmedSpecialComments = trimmedSpecialCommentsOnce.trimStartOnceIfExistsMoreThanOnce("//", "*")
         return trimmedSpecialComments.trimStart()
     }
