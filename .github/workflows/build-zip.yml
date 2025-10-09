@@ -1,8 +1,7 @@
 name: Build plugin ZIP
 
-# No automatic triggers. This workflow runs only when manually dispatched via the Actions UI or the API/gh CLI.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: read
