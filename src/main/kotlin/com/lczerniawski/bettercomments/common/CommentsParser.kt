@@ -3,10 +3,10 @@ package com.lczerniawski.bettercomments.common
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiWhiteSpace
 import com.lczerniawski.bettercomments.models.CommentData
 import com.lczerniawski.bettercomments.models.CustomTag
 import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
+import kotlin.text.trimStart
 
 class CommentsParser(project: Project) {
     private val hashBangComment = "#!/"
@@ -78,9 +78,7 @@ class CommentsParser(project: Project) {
     }
 
     private fun parseSingleLineComment(comment: String): String {
-        val trimmedSpacesText = comment.trimStart()
-        val trimmedNonSpecialComments = trimmedSpacesText.trimStart('#', '-', '\'')
-        val trimmedSpecialComments = trimmedNonSpecialComments.trimStartOnce("//", "*", "<!--")
+        val trimmedSpecialComments = trimSingleLineChars(comment)
         return trimmedSpecialComments.trimStart()
     }
 
@@ -92,21 +90,22 @@ class CommentsParser(project: Project) {
         return trimmedSpecialComments.trimStart()
     }
 
+    private fun trimSingleLineChars(comment: String): String {
+        val trimmedSpacesText = comment.trimStart()
+        val trimmedNonSpecialComments = trimmedSpacesText.trimStart('#', '-', '\'')
+        return trimmedNonSpecialComments.trimStartOnce("//", "*", "<!--")
+    }
+
     private fun findTagFromPreviousAdjacent(comment: PsiComment): CustomTag? {
-        val vFile = comment.containingFile?.virtualFile ?: return null
-        val detectedLineSeparator = vFile.detectedLineSeparator ?: System.lineSeparator()
+        val trimmedComment = trimSingleLineChars(comment.text)
+        if (!trimmedComment.startsWith("  ")) {
+            return null
+        }
 
         var lastPrev: PsiElement? = comment.prevSibling
         var firstFoundTag: CustomTag? = null
 
         while (lastPrev != null) {
-            if(lastPrev is PsiWhiteSpace) {
-                val endOfLineCount = lastPrev.text.countNonOverlapOccurrences(detectedLineSeparator)
-                if (endOfLineCount > 1){
-                    break
-                }
-            }
-
             lastPrev = lastPrev.prevSibling
             if (lastPrev is PsiComment) {
 
@@ -152,19 +151,6 @@ class CommentsParser(project: Project) {
         }
 
         return this
-    }
-
-    fun String.countNonOverlapOccurrences(pattern: String): Int {
-        if (pattern.isEmpty()) return 0
-        var count = 0
-        var index = 0
-        while (true) {
-            val found = this.indexOf(pattern, index)
-            if (found == -1) break
-            count++
-            index = found + pattern.length
-        }
-        return count
     }
 
     private fun countPatternExistence(input: String, pattern: String): Int {
