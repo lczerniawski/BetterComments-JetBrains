@@ -2,6 +2,8 @@ package com.lczerniawski.bettercomments.common
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiComment
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiWhiteSpace
 import com.lczerniawski.bettercomments.models.CommentData
 import com.lczerniawski.bettercomments.models.CustomTag
 import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
@@ -25,7 +27,7 @@ class CommentsParser(project: Project) {
     private fun processLineComment(comment: PsiComment): List<CommentData> {
         val text = comment.text
         val textTrimmed = parseSingleLineComment(text)
-        val tag = findTag(textTrimmed) ?: return emptyList()
+        val tag = findTag(textTrimmed) ?: findTagFromPreviousAdjacent(comment) ?: return emptyList()
 
         return listOf(CommentData(textTrimmed, comment.textRange.startOffset, comment.textRange.endOffset, tag))
     }
@@ -90,6 +92,43 @@ class CommentsParser(project: Project) {
         return trimmedSpecialComments.trimStart()
     }
 
+    private fun findTagFromPreviousAdjacent(comment: PsiComment): CustomTag? {
+        val vFile = comment.containingFile?.virtualFile ?: return null
+        val detectedLineSeparator = vFile.detectedLineSeparator ?: System.lineSeparator()
+
+        var lastPrev: PsiElement? = comment.prevSibling
+        var firstFoundTag: CustomTag? = null
+
+        while (lastPrev != null) {
+            if(lastPrev is PsiWhiteSpace) {
+                val endOfLineCount = lastPrev.text.countNonOverlapOccurrences(detectedLineSeparator)
+                if (endOfLineCount > 1){
+                    break
+                }
+            }
+
+            lastPrev = lastPrev.prevSibling
+            if (lastPrev is PsiComment) {
+
+                val prevTrimmed = if (lastPrev.tokenType.toString().contains("BLOCK_COMMENT")) {
+                    // We don't parse block comments for previous adjacent comments
+                    return null
+                } else {
+                    parseSingleLineComment(lastPrev.text)
+                }
+
+                val foundTag = findTag(prevTrimmed)
+                if (foundTag != null)
+                {
+                    firstFoundTag = foundTag
+                    break
+                }
+            }
+        }
+
+        return firstFoundTag
+    }
+
     private fun String.trimStartOnce(vararg strings: String): String {
         if (this.isNotEmpty()) {
             for (string in strings) {
@@ -113,6 +152,19 @@ class CommentsParser(project: Project) {
         }
 
         return this
+    }
+
+    fun String.countNonOverlapOccurrences(pattern: String): Int {
+        if (pattern.isEmpty()) return 0
+        var count = 0
+        var index = 0
+        while (true) {
+            val found = this.indexOf(pattern, index)
+            if (found == -1) break
+            count++
+            index = found + pattern.length
+        }
+        return count
     }
 
     private fun countPatternExistence(input: String, pattern: String): Int {
