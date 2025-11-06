@@ -45,7 +45,7 @@
 
     <change-notes><![CDATA[
     <h3>[3.3.0] - 06.11.2025</h3>
-    ADd support for one line comments that span multiple lines colorizing.
+    Add support for colorizing one line comments that span multiple lines.
 
     <h3>[3.2.0] - 04.08.2025</h3>
     Add support for HTML comments highlighting.
