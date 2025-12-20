@@ -98,15 +98,20 @@ class CommentsParser(project: Project) {
 
     private fun findTagFromPreviousAdjacent(comment: PsiComment): CustomTag? {
         val trimmedComment = trimSingleLineChars(comment.text)
-        if (!trimmedComment.startsWith("  ")) {
+        if (!trimmedComment.startsWith("  ") && trimmedComment.isNotEmpty()) {
             return null
         }
 
         var lastPrev: PsiElement? = comment.prevSibling
         var firstFoundTag: CustomTag? = null
+        var hasEmptyLineBetween = false
 
         while (lastPrev != null) {
-            lastPrev = lastPrev.prevSibling
+            if (lastPrev.text.contains("\n\n") || lastPrev.text.count { it == '\n' } > 1) {
+                hasEmptyLineBetween = true
+                break
+            }
+
             if (lastPrev is PsiComment) {
 
                 val prevTrimmed = if (lastPrev.tokenType.toString().contains("BLOCK_COMMENT")) {
@@ -123,9 +128,11 @@ class CommentsParser(project: Project) {
                     break
                 }
             }
+
+            lastPrev = lastPrev.prevSibling
         }
 
-        return firstFoundTag
+        return if (!hasEmptyLineBetween) firstFoundTag else null
     }
 
     private fun String.trimStartOnce(vararg strings: String): String {

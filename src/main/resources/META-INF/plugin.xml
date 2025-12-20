@@ -44,6 +44,10 @@
   ]]></description>
 
     <change-notes><![CDATA[
+    <h3>[3.3.1] - 20.12.2025</h3>
+    Fix issues with multi-line comments colorizing.
+    Now parse comment without leading spaces for multi-line comments as continuation, better track the span of multi-line comments.
+
     <h3>[3.3.0] - 06.11.2025</h3>
     Add support for colorizing one line comments that span multiple lines with two spaces in front.
 
