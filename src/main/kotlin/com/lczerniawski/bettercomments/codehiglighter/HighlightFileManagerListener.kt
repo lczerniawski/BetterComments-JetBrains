@@ -8,6 +8,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
+import com.intellij.openapi.util.Disposer
 import java.util.concurrent.Executors
 
 class HighlightFileManagerListener : FileEditorManagerListener, ProjectManagerListener {
@@ -20,7 +21,9 @@ class HighlightFileManagerListener : FileEditorManagerListener, ProjectManagerLi
         for (editor in editors) {
             val document = editor.document
             val documentListener = HighlightDocumentListener(editor)
-            document.addDocumentListener(documentListener)
+            val disposable = editor.project.let { Disposer.newDisposable() }
+
+            document.addDocumentListener(documentListener, disposable)
             documentListeners[document] = documentListener
 
             executor.submit {
