@@ -1,6 +1,9 @@
 name: Build plugin ZIP
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
