@@ -9,8 +9,8 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.ui.JBColor
 import com.lczerniawski.bettercomments.common.CommentsParser
+import com.lczerniawski.bettercomments.common.parseColorWithAlpha
 import java.awt.Font
 
 object CommentsHighlighter {
@@ -39,7 +39,7 @@ object CommentsHighlighter {
         val comments = commentsParser.findBetterComments(comment)
         comments.forEach { parsedComment ->
             val attributes = TextAttributes()
-            attributes.foregroundColor = JBColor.decode(parsedComment.tag.color)
+            attributes.foregroundColor = parsedComment.tag.color.parseColorWithAlpha()
 
             if (parsedComment.tag.isBold) {
                 attributes.fontType = attributes.fontType or Font.BOLD
@@ -51,16 +51,16 @@ object CommentsHighlighter {
 
             if (parsedComment.tag.hasUnderline) {
                 attributes.effectType = EffectType.LINE_UNDERSCORE
-                attributes.effectColor = JBColor.decode(parsedComment.tag.color)
+                attributes.effectColor = parsedComment.tag.color.parseColorWithAlpha()
             }
 
             if (parsedComment.tag.hasStrikethrough) {
                 attributes.effectType = EffectType.STRIKEOUT
-                attributes.effectColor = JBColor.decode(parsedComment.tag.color)
+                attributes.effectColor = parsedComment.tag.color.parseColorWithAlpha()
             }
 
             if (parsedComment.tag.backgroundColor != null) {
-                attributes.backgroundColor = JBColor.decode(parsedComment.tag.backgroundColor)
+                attributes.backgroundColor = parsedComment.tag.backgroundColor!!.parseColorWithAlpha()
             }
 
             markupModel.addRangeHighlighter(

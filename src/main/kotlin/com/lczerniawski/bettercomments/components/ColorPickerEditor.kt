@@ -1,6 +1,8 @@
 package com.lczerniawski.bettercomments.components
 
 import com.intellij.ui.JBColor
+import com.lczerniawski.bettercomments.common.parseColorWithAlpha
+import com.lczerniawski.bettercomments.common.toHexWithAlpha
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Component
@@ -29,11 +31,7 @@ class ColorPickerEditor : AbstractCellEditor(), TableCellEditor, ActionListener 
     ): Component {
         hexColor = value as? String ?: ""
         currentColor = if (hexColor.isNotBlank()) {
-            try {
-                Color.decode(hexColor)
-            } catch (e: Exception) {
-                JBColor.BLACK
-            }
+            hexColor.parseColorWithAlpha()
         } else {
             null
         }
@@ -62,7 +60,7 @@ class ColorPickerEditor : AbstractCellEditor(), TableCellEditor, ActionListener 
 
         okButton.addActionListener {
             currentColor = chooser.color
-            hexColor = String.format("#%06X", currentColor?.rgb?.and(0xFFFFFF) ?: 0)
+            hexColor = currentColor.toHexWithAlpha()
             dialog.dispose()
             fireEditingStopped()
         }

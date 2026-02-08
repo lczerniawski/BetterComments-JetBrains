@@ -3,10 +3,10 @@ package com.lczerniawski.bettercomments.components
 import com.intellij.icons.AllIcons
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.SimpleTextAttributes
+import com.lczerniawski.bettercomments.common.parseColorWithAlpha
 import com.lczerniawski.bettercomments.models.CommentNodeData
 import com.lczerniawski.bettercomments.models.FileNodeData
 import com.lczerniawski.bettercomments.models.FolderNodeData
-import java.awt.Color
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 
@@ -50,9 +50,9 @@ class ToolWindowTreeCellRenderer : ColoredTreeCellRenderer() {
                 style = SimpleTextAttributes.STYLE_STRIKEOUT
             }
 
-            var attributes = SimpleTextAttributes(style, Color.decode(userObject.tag.color))
+            var attributes = SimpleTextAttributes(style, userObject.tag.color.parseColorWithAlpha())
             if (userObject.tag.backgroundColor != null) {
-                attributes = SimpleTextAttributes(style, Color.decode(userObject.tag.backgroundColor), Color.decode(userObject.tag.color))
+                attributes = SimpleTextAttributes(style, userObject.tag.backgroundColor!!.parseColorWithAlpha(), userObject.tag.color.parseColorWithAlpha())
             }
 
             append("${userObject.lineNumber} ", SimpleTextAttributes.GRAYED_ATTRIBUTES)

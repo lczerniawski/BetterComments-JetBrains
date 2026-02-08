@@ -1,7 +1,7 @@
 package com.lczerniawski.bettercomments.components
 
 import com.intellij.ui.JBColor
-import java.awt.Color
+import com.lczerniawski.bettercomments.common.parseColorWithAlpha
 import java.awt.Component
 import javax.swing.JLabel
 import javax.swing.JTable
@@ -27,11 +27,7 @@ class ColorPickerRenderer : JLabel(), TableCellRenderer {
             background = table.background
             text = "No Color"
         } else {
-            background = try {
-                Color.decode(colorHex)
-            } catch (e: Exception) {
-                JBColor.WHITE
-            }
+            background = colorHex.parseColorWithAlpha(JBColor.WHITE)
             text = colorHex
         }
         return this
