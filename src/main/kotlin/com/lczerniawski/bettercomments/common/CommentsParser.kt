@@ -10,6 +10,7 @@ import kotlin.text.trimStart
 
 class CommentsParser(project: Project) {
     private val hashBangComment = "#!/"
+    private val blockCommentTypes = setOf("BLOCK_COMMENT", "C_STYLE_COMMENT")
     private val settings = BetterCommentsSettings.getInstance(project)
 
     fun findBetterComments(comment: PsiComment): List<CommentData> {
@@ -17,7 +18,7 @@ class CommentsParser(project: Project) {
             return emptyList()
         }
 
-        return if (comment.tokenType.toString().contains("BLOCK_COMMENT")) {
+        return if (blockCommentTypes.contains(comment.tokenType.toString())) {
             processBlockComment(comment)
         } else {
             processLineComment(comment)
@@ -38,6 +39,10 @@ class CommentsParser(project: Project) {
         val text = comment.text
         val lines = text.split("\n")
 
+        if (lines.isEmpty()) {
+            return emptyList()
+        }
+
         val lineComments = lines.mapNotNull { line ->
             val lineTrimmed = parseBlockComment(line)
             findTag(lineTrimmed)?.let { tag ->
@@ -46,10 +51,6 @@ class CommentsParser(project: Project) {
 
                 CommentData(lineTrimmed, startOffset, endOffset, tag)
             }
-        }
-
-        if (lines.isEmpty()) {
-            return emptyList()
         }
 
         val uniqueTags = lineComments.distinctBy { it.tag.type }
