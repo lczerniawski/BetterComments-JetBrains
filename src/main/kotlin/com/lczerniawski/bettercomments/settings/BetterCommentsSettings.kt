@@ -1,16 +1,10 @@
 package com.lczerniawski.bettercomments.settings
 
-import com.intellij.openapi.components.*
+import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.project.Project
 import com.lczerniawski.bettercomments.models.CustomTag
 
-@State(
-    name = "BetterCommentsSettings",
-    storages = [
-        Storage("betterCommentsSettings.xml")
-    ])
-@Service(Service.Level.PROJECT)
-class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.State> {
+open class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.State> {
     var tags: MutableList<CustomTag> = mutableListOf()
     var isInitialized: Boolean = false
 
@@ -32,6 +26,14 @@ class BetterCommentsSettings : PersistentStateComponent<BetterCommentsSettings.S
     }
 
     companion object {
-        fun getInstance(project: Project): BetterCommentsSettings = project.service<BetterCommentsSettings>()
+        fun getSettings(project: Project): BetterCommentsSettings {
+            val projectSettings = BetterCommentsProjectSettings.getInstance(project)
+            if (projectSettings.isInitialized) {
+                return projectSettings
+            }
+
+            val globalSettings = BetterCommentsGlobalSettings.getInstance()
+            return globalSettings
+        }
     }
 }

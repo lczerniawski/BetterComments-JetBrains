@@ -262,9 +262,9 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         val comboBox = ComboBox<String>()
         comboBox.addItem(allCommentsType)
 
-        val betterCommentSettings = BetterCommentsSettings.getInstance(project).state
-        for (type in betterCommentSettings.tags) {
-            comboBox.addItem(type.type)
+        val betterCommentSettings = BetterCommentsSettings.getSettings(project).state
+        for (tag in betterCommentSettings.tags) {
+            comboBox.addItem(tag.type)
         }
 
         return comboBox

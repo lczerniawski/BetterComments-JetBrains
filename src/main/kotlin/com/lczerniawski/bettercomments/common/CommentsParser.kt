@@ -11,7 +11,7 @@ import kotlin.text.trimStart
 class CommentsParser(project: Project) {
     private val hashBangComment = "#!/"
     private val blockCommentTypes = setOf("BLOCK_COMMENT", "C_STYLE_COMMENT")
-    private val settings = BetterCommentsSettings.getInstance(project)
+    private val settings = BetterCommentsSettings.getSettings(project)
 
     fun findBetterComments(comment: PsiComment): List<CommentData> {
         if (comment.text.startsWith(hashBangComment)) {
