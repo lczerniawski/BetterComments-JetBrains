@@ -11,6 +11,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
@@ -37,6 +38,16 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 class BetterCommentsToolWindowFactory: ToolWindowFactory {
+    override fun init(toolWindow: ToolWindow) {
+        toolWindow.setIcon(BetterCommentsIconProvider().getIcon())
+    }
+
+    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        BetterCommentsToolWindowContent(project, toolWindow)
+    }
+}
+
+private class BetterCommentsToolWindowContent(private val project: Project, toolWindow: ToolWindow) {
     private val foldersToExclude = arrayOf(".git")
     private val searchTypes = SearchTypes.values()
     private val allCommentsType = "All"
@@ -50,18 +61,17 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     private val startupLabel = JLabel("Click the refresh button to search for comments in your project.", JLabel.CENTER)
     private val scopeTypeComboBox = ComboBox(searchTypes.map { it.description }.toTypedArray())
 
-    private val iconProvider = BetterCommentsIconProvider()
+    private val commentsParser = CommentsParser(project)
+    private val commentTypeComboBox = getComboBoxForCommentsType(project)
 
-    private lateinit var commentsParser: CommentsParser
-    private lateinit var commentTypeComboBox: ComboBox<String>
-    private lateinit var project: Project
-
-    override fun init(toolWindow: ToolWindow) {
+    init {
+        Disposer.register(toolWindow.disposable) { executor.shutdownNow() }
         val treePanel = JPanel(BorderLayout())
         treePanel.add(JBScrollPane(commentTree), BorderLayout.CENTER)
         commentTree.cellRenderer = ToolWindowTreeCellRenderer()
         commentTree.addTreeSelectionListener { event ->
-            val node = event.path.lastPathComponent as DefaultMutableTreeNode
+            val node = event.newLeadSelectionPath?.lastPathComponent as? DefaultMutableTreeNode
+                ?: return@addTreeSelectionListener
             val userObject = node.userObject
             if (userObject is CommentNodeData) {
                 val fileNode = node.parent as DefaultMutableTreeNode
@@ -73,15 +83,6 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
         panel.add(startupLabel, "Startup")
         panel.add(treePanel, "Tree")
         panel.add(progressLabel, "Progress")
-
-        val icon = iconProvider.getIcon()
-        toolWindow.setIcon(icon)
-    }
-
-    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        this.project = project
-        this.commentsParser = CommentsParser(project)
-        this.commentTypeComboBox = getComboBoxForCommentsType(project)
 
         val refreshAction = object : AnAction("Refresh", "Refresh the comments list", AllIcons.Actions.Refresh) {
             override fun actionPerformed(e: AnActionEvent) {
@@ -123,9 +124,7 @@ class BetterCommentsToolWindowFactory: ToolWindowFactory {
     }
 
     private fun openFileInEditor(project: Project, file: VirtualFile, lineNumber: Int, cursorPosition: Int) {
-        FileEditorManager.getInstance(project).openTextEditor(
-            OpenFileDescriptor(project, file, lineNumber - 1, cursorPosition, false), false
-        )
+        OpenFileDescriptor(project, file, lineNumber - 1, cursorPosition, false).navigate(false)
     }
 
     private fun scanForComments() {
