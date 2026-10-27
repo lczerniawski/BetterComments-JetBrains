@@ -44,6 +44,9 @@
   ]]></description>
 
     <change-notes><![CDATA[
+    <h3>[3.5.1] - 27.10.2026</h3>
+    Fix issue with deprecated method usage in the plugin code and fix opening file with comment from the tool window.
+
     <h3>[3.5.0] - 31.07.2026</h3>
     Added new global-level settings that can be configured for all projects, with project-level settings overriding them.
 
