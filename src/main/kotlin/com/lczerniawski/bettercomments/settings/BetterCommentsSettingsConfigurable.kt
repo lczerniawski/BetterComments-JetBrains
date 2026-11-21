@@ -6,6 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.JBUI
 import com.lczerniawski.bettercomments.codehiglighter.CommentsHighlighter
 import com.lczerniawski.bettercomments.components.ColorPickerEditor
 import com.lczerniawski.bettercomments.components.ColorPickerRenderer
@@ -21,6 +22,16 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.table.DefaultTableModel
 
+private const val TYPE_COLUMN = 0
+private const val COLOR_COLUMN = 1
+private const val BACKGROUND_COLOR_COLUMN = 2
+private const val STRIKETHROUGH_COLUMN = 3
+private const val UNDERLINE_COLUMN = 4
+private const val BOLD_COLUMN = 5
+private const val ITALIC_COLUMN = 6
+private const val CONTINUATIONS_COLUMN = 7
+private const val REMOVE_COLUMN = 8
+
 class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     private var settingsPanel: JPanel? = null
     private var mainPanel: JPanel? = null
@@ -31,36 +42,8 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
 
     override fun createComponent(): JComponent? {
         settingsPanel = JPanel(BorderLayout())
-        val columnNames = arrayOf("Type", "Color", "Background Color", "Strikethrough", "Underline", "Bold", "Italic", "")
-
-        globalTableModel = object : DefaultTableModel(columnNames, 0) {
-            override fun getColumnClass(columnIndex: Int): Class<*> {
-                return when (columnIndex) {
-                    1, 2 -> String::class.java
-                    3, 4, 5, 6 -> java.lang.Boolean::class.java
-                    7 -> JButton::class.java
-                    else -> String::class.java
-                }
-            }
-
-            override fun isCellEditable(row: Int, column: Int): Boolean {
-                return column != 7
-            }
-        }
-        projectTableModel = object : DefaultTableModel(columnNames, 0) {
-            override fun getColumnClass(columnIndex: Int): Class<*> {
-                return when (columnIndex) {
-                    1, 2 -> String::class.java
-                    3, 4, 5, 6 -> java.lang.Boolean::class.java
-                    7 -> JButton::class.java
-                    else -> String::class.java
-                }
-            }
-
-            override fun isCellEditable(row: Int, column: Int): Boolean {
-                return column != 7
-            }
-        }
+        globalTableModel = createTagTableModel()
+        projectTableModel = createTagTableModel()
 
         loadSettings()
 
@@ -69,12 +52,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
 
         val globalPanel = JPanel(BorderLayout())
         globalPanel.border = javax.swing.border.TitledBorder("Global Settings")
-        val globalTable = JBTable(globalTableModel)
-        globalTable.preferredScrollableViewportSize = Dimension(600, 200)
-        globalTable.fillsViewportHeight = true
-        configureColorAndBackgroundColor(globalTable)
-        configureRemoveButton(globalTable, globalTableModel)
-        globalPanel.add(JBScrollPane(globalTable), BorderLayout.CENTER)
+        globalPanel.add(JBScrollPane(createTagTable(globalTableModel)), BorderLayout.CENTER)
         configureAddTagButton(globalTableModel, globalPanel)
         mainPanel?.add(globalPanel)
 
@@ -82,6 +60,29 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         mainPanel?.add(createProjectSettingsPanel())
 
         return settingsPanel
+    }
+
+    private fun createTagTable(model: DefaultTableModel): JBTable {
+        val table = JBTable(model)
+        table.preferredScrollableViewportSize = Dimension(600, 200)
+        table.fillsViewportHeight = true
+        table.columnModel.getColumn(CONTINUATIONS_COLUMN).preferredWidth = JBUI.scale(105)
+        configureColorAndBackgroundColor(table)
+        configureRemoveButton(table, model)
+        return table
+    }
+
+    private fun createTagTableModel(): DefaultTableModel {
+        val columnNames = arrayOf("Type", "Color", "Background Color", "Strikethrough", "Underline", "Bold", "Italic", "Continuations", "")
+        return object : DefaultTableModel(columnNames, 0) {
+            override fun getColumnClass(columnIndex: Int): Class<*> = when (columnIndex) {
+                STRIKETHROUGH_COLUMN, UNDERLINE_COLUMN, BOLD_COLUMN, ITALIC_COLUMN, CONTINUATIONS_COLUMN -> java.lang.Boolean::class.java
+                REMOVE_COLUMN -> JButton::class.java
+                else -> String::class.java
+            }
+
+            override fun isCellEditable(row: Int, column: Int): Boolean = column != REMOVE_COLUMN
+        }
     }
 
     override fun apply() {
@@ -97,13 +98,13 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
     private fun getTagsFromModel(model: DefaultTableModel): List<CustomTag> {
         val tags = mutableListOf<CustomTag>()
         for (i in 0 until model.rowCount) {
-            val type = model.getValueAt(i, 0) as String
-            val color = model.getValueAt(i, 1) as String
-            val backgroundColor = model.getValueAt(i, 2) as String
-            val hasStrikethrough = model.getValueAt(i, 3) as Boolean
-            val hasUnderline = model.getValueAt(i, 4) as Boolean
-            val isBold = model.getValueAt(i, 5) as Boolean
-            val isItalic = model.getValueAt(i, 6) as Boolean
+            val type = model.getValueAt(i, TYPE_COLUMN) as String
+            val color = model.getValueAt(i, COLOR_COLUMN) as String
+            val backgroundColor = model.getValueAt(i, BACKGROUND_COLOR_COLUMN) as String
+            val hasStrikethrough = model.getValueAt(i, STRIKETHROUGH_COLUMN) as Boolean
+            val hasUnderline = model.getValueAt(i, UNDERLINE_COLUMN) as Boolean
+            val isBold = model.getValueAt(i, BOLD_COLUMN) as Boolean
+            val isItalic = model.getValueAt(i, ITALIC_COLUMN) as Boolean
 
             tags.add(CustomTag(
                 type = type,
@@ -112,7 +113,8 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
                 hasStrikethrough = hasStrikethrough,
                 hasUnderline = hasUnderline,
                 isBold = isBold,
-                isItalic = isItalic
+                isItalic = isItalic,
+                highlightContinuations = model.getValueAt(i, CONTINUATIONS_COLUMN) as Boolean
             ))
         }
         return tags
@@ -133,13 +135,14 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         for (i in 0 until model.rowCount) {
             val tag = tags[i]
             if (
-                model.getValueAt(i, 0) != tag.type ||
-                model.getValueAt(i, 1) != tag.color ||
-                model.getValueAt(i, 2) != (tag.backgroundColor ?: "") ||
-                model.getValueAt(i, 3) != tag.hasStrikethrough ||
-                model.getValueAt(i, 4) != tag.hasUnderline ||
-                model.getValueAt(i, 5) != tag.isBold ||
-                model.getValueAt(i, 6) != tag.isItalic
+                model.getValueAt(i, TYPE_COLUMN) != tag.type ||
+                model.getValueAt(i, COLOR_COLUMN) != tag.color ||
+                model.getValueAt(i, BACKGROUND_COLOR_COLUMN) != (tag.backgroundColor ?: "") ||
+                model.getValueAt(i, STRIKETHROUGH_COLUMN) != tag.hasStrikethrough ||
+                model.getValueAt(i, UNDERLINE_COLUMN) != tag.hasUnderline ||
+                model.getValueAt(i, BOLD_COLUMN) != tag.isBold ||
+                model.getValueAt(i, ITALIC_COLUMN) != tag.isItalic ||
+                model.getValueAt(i, CONTINUATIONS_COLUMN) != tag.highlightContinuations
             ) {
                 return true
             }
@@ -163,19 +166,19 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT))
         val addButton = JButton("Add Tag")
         addButton.addActionListener {
-            model.addRow(arrayOf("", "", "", false, false, false, false, JButton("Remove")))
+            addTagRow(model, CustomTag())
         }
         buttonPanel.add(addButton)
         parent.add(buttonPanel, BorderLayout.SOUTH)
     }
 
     private fun configureRemoveButton(table: JBTable, model: DefaultTableModel) {
-        table.columnModel.getColumn(7).cellRenderer = RemoveButtonRenderer()
+        table.columnModel.getColumn(REMOVE_COLUMN).cellRenderer = RemoveButtonRenderer()
         table.addMouseListener(object : MouseAdapter() {
             override fun mouseClicked(e: MouseEvent) {
                 val row = table.rowAtPoint(e.point)
-                val column = table.columnAtPoint(e.point)
-                if (column == 7 && row != -1) {
+                val column = table.convertColumnIndexToModel(table.columnAtPoint(e.point))
+                if (column == REMOVE_COLUMN && row != -1) {
                     model.removeRow(row)
                 }
             }
@@ -184,48 +187,35 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
 
     private fun configureColorAndBackgroundColor(table: JBTable) {
         val colorEditor = ColorPickerEditor()
-        table.columnModel.getColumn(1).cellEditor = colorEditor
-        table.columnModel.getColumn(2).cellEditor = colorEditor
+        table.columnModel.getColumn(COLOR_COLUMN).cellEditor = colorEditor
+        table.columnModel.getColumn(BACKGROUND_COLOR_COLUMN).cellEditor = colorEditor
 
         val colorRenderer = ColorPickerRenderer()
-        table.columnModel.getColumn(1).cellRenderer = colorRenderer
-        table.columnModel.getColumn(2).cellRenderer = colorRenderer
+        table.columnModel.getColumn(COLOR_COLUMN).cellRenderer = colorRenderer
+        table.columnModel.getColumn(BACKGROUND_COLOR_COLUMN).cellRenderer = colorRenderer
     }
 
     private fun loadSettings() {
         globalTableModel.rowCount = 0
         projectTableModel.rowCount = 0
-        val globalSettings = BetterCommentsGlobalSettings.getInstance()
-        globalSettings.tags.forEach { tag ->
-            globalTableModel.addRow(
-                arrayOf(
-                    tag.type,
-                    tag.color,
-                    tag.backgroundColor ?: "",
-                    tag.hasStrikethrough,
-                    tag.hasUnderline,
-                    tag.isBold,
-                    tag.isItalic,
-                    JButton("Remove")
-                )
-            )
-        }
+        BetterCommentsGlobalSettings.getInstance().tags.forEach { addTagRow(globalTableModel, it) }
+        BetterCommentsProjectSettings.getInstance(project).tags.forEach { addTagRow(projectTableModel, it) }
+    }
 
-        val localSettings = BetterCommentsProjectSettings.getInstance(project)
-        localSettings.tags.forEach { tag ->
-            projectTableModel.addRow(
-                arrayOf(
-                    tag.type,
-                    tag.color,
-                    tag.backgroundColor ?: "",
-                    tag.hasStrikethrough,
-                    tag.hasUnderline,
-                    tag.isBold,
-                    tag.isItalic,
-                    JButton("Remove")
-                )
+    private fun addTagRow(model: DefaultTableModel, tag: CustomTag) {
+        model.addRow(
+            arrayOf(
+                tag.type,
+                tag.color,
+                tag.backgroundColor ?: "",
+                tag.hasStrikethrough,
+                tag.hasUnderline,
+                tag.isBold,
+                tag.isItalic,
+                tag.highlightContinuations,
+                JButton("Remove")
             )
-        }
+        )
     }
 
     private fun createProjectSettingsPanel(): JPanel {
@@ -242,12 +232,7 @@ class BetterCommentsSettingsConfigurable : SearchableConfigurable {
         } else {
             val projectPanel = JPanel(BorderLayout())
             projectPanel.border = javax.swing.border.TitledBorder("Project Settings")
-            val projectTable = JBTable(projectTableModel)
-            projectTable.preferredScrollableViewportSize = Dimension(600, 200)
-            projectTable.fillsViewportHeight = true
-            configureColorAndBackgroundColor(projectTable)
-            configureRemoveButton(projectTable, projectTableModel)
-            projectPanel.add(JBScrollPane(projectTable), BorderLayout.CENTER)
+            projectPanel.add(JBScrollPane(createTagTable(projectTableModel)), BorderLayout.CENTER)
             configureAddTagButton(projectTableModel, projectPanel)
             return projectPanel
         }

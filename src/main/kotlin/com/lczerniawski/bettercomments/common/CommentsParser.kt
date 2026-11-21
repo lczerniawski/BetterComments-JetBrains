@@ -133,7 +133,7 @@ class CommentsParser(project: Project) {
             lastPrev = lastPrev.prevSibling
         }
 
-        return if (!hasEmptyLineBetween) firstFoundTag else null
+        return firstFoundTag?.takeIf { !hasEmptyLineBetween && it.highlightContinuations }
     }
 
     private fun String.trimStartOnce(vararg strings: String): String {

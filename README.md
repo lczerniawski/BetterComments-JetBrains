@@ -11,6 +11,7 @@ This plugin is inspired by the [Better Comments extension for Visual Studio Code
 ## Key Features
 
 - **Color-Coded Comments**: Use predefined tags such as `TODO`, `?`, `!`, `//`, and `*` to categorize comments by color, enhancing visibility and organization.
+- **Line Comment Continuations**: An indented line like `//  more details` inherits the preceding tagged comment’s highlighting by default. Under **Settings → Editor → Better Comments**, uncheck **Continuations** on a tag’s row to stop its highlighting from carrying over to following line comments.
 - **Custom Tag Addition**: Users can add their own tags, allowing for personalized comment styles tailored to specific project needs.
 - **Improved Readability**: Distinct comment styles contribute to clearer code comprehension, making it easier for teams to collaborate.
 - **Wide Compatibility**: Compatible with all JetBrains IDEs, including IntelliJ IDEA, PyCharm, and WebStorm.

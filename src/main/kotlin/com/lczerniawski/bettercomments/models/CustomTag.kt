@@ -7,5 +7,6 @@ data class CustomTag(
     var hasUnderline: Boolean = false,
     var backgroundColor: String? = null,
     var isBold: Boolean = false,
-    var isItalic: Boolean = false
+    var isItalic: Boolean = false,
+    var highlightContinuations: Boolean = true
 )
