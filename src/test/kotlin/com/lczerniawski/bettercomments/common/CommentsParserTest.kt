@@ -11,7 +11,7 @@ import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
 import org.jdom.Element
 
 class CommentsParserTest : BasePlatformTestCase() {
-    fun testOnlyEnabledTagsHighlightContinuations() {
+    fun testLineCommentContinuationBoundaries() {
         val projectSettings = BetterCommentsProjectSettings.getInstance(project)
         val originalProjectState = projectSettings.state
         try {
@@ -25,7 +25,9 @@ class CommentsParserTest : BasePlatformTestCase() {
                 """
                 // NOTE tagged line
                 //  continuation
+                //  another continuation
                 // not a continuation
+                //  does not inherit NOTE after the reset
                 //  TODO explicitly tagged line
                 //  does not inherit TODO or fall back to NOTE
                 /* TODO tagged block
@@ -36,7 +38,7 @@ class CommentsParserTest : BasePlatformTestCase() {
             val comments = PsiTreeUtil.collectElementsOfType(file, PsiComment::class.java).toList()
             val parser = CommentsParser(project)
             assertEquals(
-                listOf("NOTE", "NOTE", null, "TODO", null, "TODO"),
+                listOf("NOTE", "NOTE", "NOTE", null, null, "TODO", null, "TODO"),
                 comments.map { parser.findBetterComments(it).singleOrNull()?.tag?.type }
             )
         } finally {

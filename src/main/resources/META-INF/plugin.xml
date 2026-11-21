@@ -44,6 +44,9 @@
   ]]></description>
 
     <change-notes><![CDATA[
+    <h3>[3.6.1] - 21.11.2026</h3>
+    Fix issue with single line comment continuation happening even after a comment breaking out of pattern.
+
     <h3>[3.6.0] - 21.11.2026</h3>
     Add support for disabling the single line comment continuation per style tag.
 

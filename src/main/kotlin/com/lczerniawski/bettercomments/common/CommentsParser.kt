@@ -2,7 +2,6 @@ package com.lczerniawski.bettercomments.common
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiComment
-import com.intellij.psi.PsiElement
 import com.lczerniawski.bettercomments.models.CommentData
 import com.lczerniawski.bettercomments.models.CustomTag
 import com.lczerniawski.bettercomments.settings.BetterCommentsSettings
@@ -97,43 +96,28 @@ class CommentsParser(project: Project) {
         return trimmedNonSpecialComments.trimStartOnce("//", "*", "<!--")
     }
 
+    private fun isContinuation(text: String): Boolean = text.startsWith("  ") || text.isEmpty()
+
     private fun findTagFromPreviousAdjacent(comment: PsiComment): CustomTag? {
-        val trimmedComment = trimSingleLineChars(comment.text)
-        if (!trimmedComment.startsWith("  ") && trimmedComment.isNotEmpty()) {
-            return null
-        }
+        if (!isContinuation(trimSingleLineChars(comment.text))) return null
 
-        var lastPrev: PsiElement? = comment.prevSibling
-        var firstFoundTag: CustomTag? = null
-        var hasEmptyLineBetween = false
+        var previous = comment.prevSibling
+        while (previous != null) {
+            if (previous.text.contains("\n\n") || previous.text.count { it == '\n' } > 1) return null
 
-        while (lastPrev != null) {
-            if (lastPrev.text.contains("\n\n") || lastPrev.text.count { it == '\n' } > 1) {
-                hasEmptyLineBetween = true
-                break
+            if (previous is PsiComment) {
+                if (previous.tokenType.toString().contains("BLOCK_COMMENT")) return null
+
+                val text = trimSingleLineChars(previous.text)
+                val tag = findTag(text.trimStart())
+                if (tag != null) return tag.takeIf { it.highlightContinuations }
+                if (!isContinuation(text)) return null
             }
 
-            if (lastPrev is PsiComment) {
-
-                val prevTrimmed = if (lastPrev.tokenType.toString().contains("BLOCK_COMMENT")) {
-                    // We don't parse block comments for previous adjacent comments
-                    return null
-                } else {
-                    parseSingleLineComment(lastPrev.text)
-                }
-
-                val foundTag = findTag(prevTrimmed)
-                if (foundTag != null)
-                {
-                    firstFoundTag = foundTag
-                    break
-                }
-            }
-
-            lastPrev = lastPrev.prevSibling
+            previous = previous.prevSibling
         }
 
-        return firstFoundTag?.takeIf { !hasEmptyLineBetween && it.highlightContinuations }
+        return null
     }
 
     private fun String.trimStartOnce(vararg strings: String): String {
